@@ -1,0 +1,415 @@
+
+######################################################################
+#  CHAINOFMEANING v3 BUYUME TESTI
+#  Motor bilgi biriktirikce akillaniytor mu?
+######################################################################
+
+======================================================================
+  FAZ 1: Temel Bilgi (59 kural)
+======================================================================
+
+  Yukleme: 59 kural, 0.003s
+  State: 59 aktif kural
+
+  Soru P1Q1: "Kedi bir hayvan midir?"
+    Beklenen: kedi -> hayvan (turu ile)
+    [DOGRUDAN] [1.0|m1] kedi --turu--> hayvan (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] kopek --turu--> hayvan (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] hayvan --ozellik--> canli (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] kedi --ozellik--> miyavlar (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] aslan --turu--> hayvan (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] tavsan --turu--> hayvan (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] kus --turu--> hayvan (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] balik --turu--> hayvan (guven: 1.00)
+    ... ve 2 sonuc daha
+    Sonuc: GECTI (10 cikarim, 0.0ms)
+
+  Soru P1Q2: "Elma saglikli midir?"
+    Beklenen: elma -> meyve -> saglikli (kalitim ile)
+    [DOGRUDAN] [1.0|m1] meyve --etki--> saglikli (guven: 1.00)
+    [ZINCIR]   portakal -> meyve -> saglikli (guven: 1.00)
+    [DOGRUDAN] [0.8|m1] elma --turu--> meyve (guven: 0.85)
+    [ZINCIR]   elma -> meyve -> yiyecek (guven: 0.85)
+    [ZINCIR]   elma -> meyve -> saglikli (guven: 0.85)
+    [ZINCIR]   elma -> meyve -> yiyecek -> besler (guven: 0.85)
+    [ZINCIR]   muz -> meyve -> saglikli (guven: 0.85)
+    Sonuc: GECTI (7 cikarim, 0.0ms)
+
+  Soru P1Q3: "Doktor ne saglar?"
+    Beklenen: doktor -> saglik (dogrudan)
+    [DOGRUDAN] [1.0|m1] doktor --turu--> meslek (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] doktor --saglar--> saglik (guven: 1.00)
+    [ZINCIR]   doktor -> meslek -> gelir (guven: 1.00)
+    Sonuc: GECTI (3 cikarim, 0.0ms)
+
+  Soru P1Q4: "Bisiklet cevreci midir?"
+    Beklenen: bisiklet -> cevreci (dogrudan kural)
+    [DOGRUDAN] [1.0|m1] bisiklet --turu--> tasit (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] bisiklet --etki--> cevreci (guven: 1.00)
+    [ZINCIR]   bisiklet -> tasit -> ulasim (guven: 1.00)
+    [ZINCIR]   bisiklet -> cevreci (guven: 1.00)
+    Sonuc: GECTI (4 cikarim, 0.0ms)
+
+  Soru P1Q5: "Aslan miyavlar mi?"
+    Beklenen: BAGLANTI YOK (farkli hayvanlar)
+    [DOGRUDAN] [1.0|m1] kedi --ozellik--> miyavlar (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] aslan --turu--> hayvan (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] aslan --ozellik--> yirtici (guven: 1.00)
+    [ZINCIR]   aslan -> hayvan -> canli (guven: 1.00)
+    Sonuc: GECTI (4 cikarim, 0.0ms)
+
+  Taxonomy: 16 cluster (8 multi-member)
+    Cluster 0 (6 uye): aslan, balik, kedi, kopek, kus, tavsan
+    Cluster 5 (4 uye): ekmek, icecek, meyve, peynir
+    Cluster 7 (4 uye): avukat, doktor, muhendis, ogretmen
+    Cluster 9 (4 uye): araba, bisiklet, gemi, ucak
+    Cluster 2 (3 uye): elma, muz, portakal
+
+  Faz 1 Ozet: Dogruluk=5.0/5, Nuans=5.0/5, Duzeltme=N/A
+  Performans: yukleme=0.003s, ort.sorgu=0.0ms
+
+======================================================================
+  FAZ 2: Iliski Derinlestirme (+100 kural)
+======================================================================
+
+  Yukleme: +100 kural, 0.013s
+  State: 158 aktif kural
+
+  Soru P2Q1: "Spor neden faydalidir?"
+    Beklenen: spor -> kas -> guc -> faydali (4 adimlik zincir)
+    [DOGRUDAN] [1.0|m1] spor --gelistirir--> kas (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] guc --etki--> faydali (guven: 1.00)
+    [ZINCIR]   spor -> kas -> guc (guven: 1.00)
+    [ZINCIR]   spor -> kas -> guc -> faydali (guven: 1.00)
+    [ZINCIR]   kas -> guc -> faydali (guven: 1.00)
+    [DOGRUDAN] [0.8|m1] spor --etki--> saglikli (guven: 0.85)
+    [DOGRUDAN] [0.8|m1] iletisim --etki--> faydali (guven: 0.85)
+    [ZINCIR]   dayanisma -> guc -> faydali (guven: 0.85)
+    ... ve 9 sonuc daha
+    Sonuc: GECTI (17 cikarim, 0.0ms)
+
+  Soru P2Q2: "Yapay zeka verimli midir?"
+    Beklenen: yapay zeka -> otomasyon -> verimli
+    [DOGRUDAN] [1.0|m1] yapay zeka --turu--> teknoloji (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] otomasyon --etki--> verimli (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] robot --kullanir--> yapay zeka (guven: 1.00)
+    [ZINCIR]   yapay zeka -> teknoloji -> iletisim (guven: 1.00)
+    [ZINCIR]   yapay zeka -> teknoloji -> iletisim -> empati (guven: 1.00)
+    [ZINCIR]   yapay zeka -> teknoloji -> iletisim -> empati -> sevgi (guven: 1.00)
+    [ZINCIR]   yapay zeka -> teknoloji -> iletisim -> empati -> sevgi -> baglanma (guven: 1.00)
+    [DOGRUDAN] [0.8|m1] yapay zeka --gelistirir--> otomasyon (guven: 0.85)
+    ... ve 5 sonuc daha
+    Sonuc: GECTI (13 cikarim, 0.0ms)
+
+  Soru P2Q3: "Egitim ozgurlestirir mi?"
+    Beklenen: egitim kurumu -> bilgi -> dusunce -> ozgurlestirir
+    [DOGRUDAN] [1.0|m1] universite --turu--> egitim kurumu (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] egitim kurumu --saglar--> bilgi (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] dusunce --etki--> ozgurlestirir (guven: 1.00)
+    [ZINCIR]   egitim kurumu -> bilgi -> dusunce (guven: 1.00)
+    [ZINCIR]   egitim kurumu -> bilgi -> dusunce -> ozgurlestirir (guven: 1.00)
+    [ZINCIR]   bilgi -> dusunce -> ozgurlestirir (guven: 1.00)
+    [ZINCIR]   kitap -> bilgi -> dusunce -> ozgurlestirir (guven: 1.00)
+    [ZINCIR]   universite -> egitim kurumu -> bilgi -> dusunce -> ozgurlestirir (guven: 1.00)
+    ... ve 6 sonuc daha
+    Sonuc: GECTI (14 cikarim, 0.0ms)
+
+  Soru P2Q4: "Agac neden onemlidir?"
+    Beklenen: agac -> oksijen -> hayati
+    [DOGRUDAN] [1.0|m1] enerji --etki--> hayati (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] agac --uretir--> oksijen (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] oksijen --etki--> hayati (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] agac --turu--> bitki (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] orman --icerir--> agac (guven: 1.00)
+    [ZINCIR]   agac -> oksijen -> hayati (guven: 1.00)
+    [ZINCIR]   agac -> bitki -> fotosentez (guven: 1.00)
+    [ZINCIR]   isik -> enerji -> hayati (guven: 1.00)
+    ... ve 6 sonuc daha
+    Sonuc: GECTI (14 cikarim, 0.0ms)
+
+  Soru P2Q5: "Yalnizlik neden kotudur?"
+    Beklenen: yalnizlik -> olumsuz (dogrudan)
+    [DOGRUDAN] [1.0|m1] uzuntu --etki--> olumsuz (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] yalnizlik --etki--> olumsuz (guven: 1.00)
+    [ZINCIR]   yalnizlik -> olumsuz (guven: 1.00)
+    Sonuc: GECTI (3 cikarim, 0.0ms)
+
+  Taxonomy: 54 cluster (19 multi-member)
+    Cluster 5 (12 uye): besin ogesi, ekmek, et, icecek, kosu, meditasyon, meyve, peynir
+    Cluster 7 (7 uye): arastirma, avukat, doktor, egitim kurumu, kitap, muhendis, ogretmen
+    Cluster 33 (6 uye): bilgisayar, internet, robot, telefon, yapay zeka, yazilim
+    Cluster 36 (6 uye): ait olma, basari, guven, ilerleme, mutluluk, verimlilik
+    Cluster 0 (4 uye): balik, kedi, kopek, kus
+
+  Faz 2 Ozet: Dogruluk=5.0/5, Nuans=5.0/5, Duzeltme=N/A
+  Performans: yukleme=0.013s, ort.sorgu=0.0ms
+
+======================================================================
+  FAZ 3: Celiskiler (+88 kural)
+======================================================================
+
+  Yukleme: +88 kural, 0.031s
+  State: 246 aktif kural
+
+  Soru P3Q1: "Kahve saglikli midir?"
+    Beklenen: Hem saglikli hem zararli yonler (nuans)
+    [DOGRUDAN] [1.0|m1] kahve --icerir--> kafein (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] kahve --etki--> lezzetli (guven: 1.00)
+    [ZINCIR]   kahve -> kafein -> bagimlilik yapici (guven: 1.00)
+    [ZINCIR]   kahve -> kafein -> uyarir (guven: 0.67)
+    [DOGRUDAN] [0.7|m1] kahve --etki--> saglikli (guven: 0.66)
+    Sonuc: GECTI (5 cikarim, 0.0ms)
+
+  Soru P3Q2: "Teknoloji iyi midir?"
+    Beklenen: faydali vs bagimlilik yapici (celiski)
+    [DOGRUDAN] [1.0|m1] bilgisayar --turu--> teknoloji (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] telefon --turu--> teknoloji (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] internet --turu--> teknoloji (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] teknoloji --saglar--> iletisim (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] yapay zeka --turu--> teknoloji (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] robot --turu--> teknoloji (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] yazilim --turu--> teknoloji (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] teknoloji --etki--> bagimlilik yapici (guven: 1.00)
+    ... ve 9 sonuc daha
+    Sonuc: GECTI (17 cikarim, 0.0ms)
+
+  Soru P3Q3: "Gunes zararli midir?"
+    Beklenen: d vitamini vs yanik (nuans)
+    [DOGRUDAN] [1.0|m1] gunes --etki--> sicaklik (guven: 1.00)
+    [DOGRUDAN] [0.7|m1] gunes --etki--> yanik (guven: 0.68)
+    [DOGRUDAN] [0.6|m1] gunes --saglar--> sicaklik (guven: 0.61)
+    [DOGRUDAN] [0.4|m1] gunes --etki--> d vitamini (guven: 0.43)
+    [DOGRUDAN] [0.2|m1] gunes --saglar--> isik (guven: 0.22)
+    [ZINCIR]   gunes -> isik -> enerji (guven: 0.22)
+    [ZINCIR]   gunes -> isik -> enerji -> hayati (guven: 0.22)
+    Sonuc: GECTI (7 cikarim, 0.0ms)
+
+  Soru P3Q4: "Sut saglikli midir?"
+    Beklenen: kalsiyum vs laktoz (dolayli celiski)
+    [DOGRUDAN] [1.0|m1] sut --icerir--> kalsiyum (guven: 1.00)
+    [ZINCIR]   sut -> kalsiyum -> kemik guclendirici (guven: 1.00)
+    [DOGRUDAN] [0.7|m1] sut --icerir--> laktoz (guven: 0.67)
+    [ZINCIR]   sut -> laktoz -> sindirim sorunu (guven: 0.67)
+    [DOGRUDAN] [0.6|m1] sut --turu--> icecek (guven: 0.61)
+    [ZINCIR]   sut -> icecek -> yiyecek (guven: 0.61)
+    [ZINCIR]   sut -> icecek -> yiyecek -> besler (guven: 0.61)
+    Sonuc: GECTI (7 cikarim, 0.0ms)
+
+  Soru P3Q5: "Sosyal medya faydali mi zararli mi?"
+    Beklenen: iletisim vs bagimlilik (her iki taraf)
+    [DOGRUDAN] [1.0|m1] sosyal medya --saglar--> iletisim (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] sosyal medya --azaltir--> dikkat (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] sosyal medya --turu--> teknoloji (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] sosyal medya --etki--> eglenceli (guven: 1.00)
+    [ZINCIR]   sosyal medya -> iletisim -> empati (guven: 1.00)
+    [ZINCIR]   sosyal medya -> teknoloji -> iletisim (guven: 1.00)
+    [ZINCIR]   sosyal medya -> teknoloji -> bagimlilik yapici (guven: 1.00)
+    [ZINCIR]   sosyal medya -> iletisim -> empati -> sevgi (guven: 1.00)
+    ... ve 9 sonuc daha
+    Sonuc: GECTI (17 cikarim, 0.0ms)
+
+  Taxonomy: 69 cluster (23 multi-member)
+    Cluster 5 (17 uye): bal, besin ogesi, cay, egzersiz, ekmek, et, icecek, kahve
+    Cluster 7 (8 uye): arastirma, avukat, doktor, egitim kurumu, kitap, muhendis, ogretmen, televizyon
+    Cluster 36 (7 uye): ait olma, basari, dayaniklilik, guven, ilerleme, mutluluk, verimlilik
+    Cluster 33 (5 uye): bilgisayar, robot, telefon, yapay zeka, yazilim
+    Cluster 0 (4 uye): balik, kedi, kopek, kus
+
+  Faz 3 Ozet: Dogruluk=5.0/5, Nuans=5.0/5, Duzeltme=N/A
+  Performans: yukleme=0.031s, ort.sorgu=0.0ms
+
+======================================================================
+  FAZ 4: Bilgi Duzeltme (+86 kural)
+======================================================================
+
+  Yukleme: +86 kural, 0.062s
+  State: 287 aktif kural
+
+  Soru P4Q1: "Dunya duz mudur?"
+    Beklenen: duz mass=1, yuvarlak mass>=3 (reinforced, yapisal olarak guclu)
+    [DOGRUDAN] [1.0|m1] dunya --ozellik--> duz (guven: 1.00)
+    [ZINCIR]   dunya -> duz (guven: 1.00)
+    [DOGRUDAN] [0.8|m4] dunya --ozellik--> yuvarlak (guven: 0.80)
+    Sonuc: GECTI (3 cikarim, 0.0ms)
+
+  Soru P4Q2: "Teknoloji faydali midir?"
+    Beklenen: faydali yuksek confidence (4x reinforced)
+    [DOGRUDAN] [1.0|m1] guc --etki--> faydali (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] bilgisayar --turu--> teknoloji (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] telefon --turu--> teknoloji (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] internet --turu--> teknoloji (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] teknoloji --saglar--> iletisim (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] yapay zeka --turu--> teknoloji (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] robot --turu--> teknoloji (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] yazilim --turu--> teknoloji (guven: 1.00)
+    ... ve 37 sonuc daha
+    Sonuc: GECTI (45 cikarim, 0.0ms)
+
+  Soru P4Q3: "Spor saglikli midir?"
+    Beklenen: saglikli cok yuksek confidence (4x reinforced)
+    [DOGRUDAN] [1.0|m1] spor --gelistirir--> kas (guven: 1.00)
+    [DOGRUDAN] [1.0|m3] uyku --etki--> saglikli (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] yuruyus --etki--> saglikli (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] kosu --etki--> saglikli (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] besin ogesi --etki--> saglikli (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] cay --etki--> saglikli (guven: 1.00)
+    [DOGRUDAN] [1.0|m2] olculu kullanim --etki--> saglikli (guven: 1.00)
+    [DOGRUDAN] [1.0|m2] beslenme --etki--> saglikli (guven: 1.00)
+    ... ve 62 sonuc daha
+    Sonuc: GECTI (70 cikarim, 0.6ms)
+
+  Soru P4Q4: "Bilgi guclu mudur?"
+    Beklenen: guclu reinforced
+    [DOGRUDAN] [1.0|m1] egitim kurumu --saglar--> bilgi (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] bilgi --gelistirir--> dusunce (guven: 1.00)
+    [DOGRUDAN] [1.0|m3] kitap --saglar--> bilgi (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] televizyon --saglar--> bilgi (guven: 1.00)
+    [ZINCIR]   bilgi -> dusunce -> ozgurlestirir (guven: 1.00)
+    [ZINCIR]   universite -> egitim kurumu -> bilgi (guven: 1.00)
+    [ZINCIR]   ogretmen -> kitap -> bilgi (guven: 1.00)
+    [DOGRUDAN] [0.8|m3] bilgi --etki--> guclu (guven: 0.85)
+    ... ve 14 sonuc daha
+    Sonuc: GECTI (22 cikarim, 0.0ms)
+
+  Onemli Kurallarin Durumu:
+    [0.8|m4] dunya --ozellik--> yuvarlak
+    [1.0|m1] dunya --ozellik--> duz
+    [0.4|m4] teknoloji --etki--> faydali
+    [0.2|m1] teknoloji --etki--> bagimlilik yapici
+    [0.8|m4] spor --etki--> saglikli
+  Taxonomy: 68 cluster (24 multi-member)
+    Cluster 5 (25 uye): bal, besin ogesi, beslenme, cay, dengeli beslenme, egzersiz, ekmek, et
+    Cluster 36 (15 uye): ait olma, anlayis, arkadaslik, basari, bilincli tuketim, dayaniklilik, destek, empati
+    Cluster 7 (9 uye): arastirma, asci, avukat, doktor, egitim kurumu, kitap, muhendis, ogretmen
+    Cluster 28 (6 uye): egitim, elestirisel dusunme, geri donusum, guc, iletisim, kaynak dogrulama
+    Cluster 44 (6 uye): fosil yakit, gunes enerjisi, isik, karbonhidrat, ruzgar enerjisi, yenilenebilir enerji
+
+  Faz 4 Ozet: Dogruluk=4.0/4, Nuans=4.0/4, Duzeltme=4.0/4
+  Performans: yukleme=0.062s, ort.sorgu=0.2ms
+
+======================================================================
+  FAZ 5: Olcek (+161 kural)
+======================================================================
+
+  Yukleme: +161 kural, 0.123s
+  State: 445 aktif kural
+
+  --- Faz 5 Kendi Sorulari ---
+  Soru P5Q1: "Insan neden onemlidir?"
+    Beklenen: Birden fazla domain'den sonuc (genis bilgi)
+    [DOGRUDAN] [1.0|m1] insan --yer--> et (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] insan --ozellik--> sosyal (guven: 1.00)
+    [DOGRUDAN] [0.8|m1] insan --saglar--> toplum (guven: 0.85)
+    [ZINCIR]   insan -> et -> yiyecek (guven: 0.85)
+    [ZINCIR]   insan -> et -> kolesterol (guven: 0.85)
+    [ZINCIR]   insan -> toplum -> duzen (guven: 0.85)
+    [ZINCIR]   insan -> et -> yiyecek -> temel ihtiyac (guven: 0.85)
+    [ZINCIR]   insan -> toplum -> duzen -> onemli (guven: 0.85)
+    ... ve 49 sonuc daha
+    Sonuc: GECTI (57 cikarim, 0.0ms)
+
+  Soru P5Q2: "Sanat neden degerlidir?"
+    Beklenen: ilham verici, yaraticilik, olumlu
+    [DOGRUDAN] [1.0|m1] muzik --turu--> sanat (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] resim --turu--> sanat (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] sinema --turu--> sanat (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] sanat --gelistirir--> yaraticilik (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] tiyatro --turu--> sanat (guven: 1.00)
+    [ZINCIR]   sanat -> yaraticilik -> olumlu (guven: 1.00)
+    [ZINCIR]   calgi -> muzik -> sanat (guven: 1.00)
+    [ZINCIR]   piyano -> calgi -> muzik -> sanat (guven: 1.00)
+    ... ve 20 sonuc daha
+    Sonuc: GECTI (28 cikarim, 0.0ms)
+
+  Soru P5Q3: "Bilim ne saglar?"
+    Beklenen: ilerleme, bilgi
+    [DOGRUDAN] [1.0|m3] bilim --saglar--> ilerleme (guven: 1.00)
+    [ZINCIR]   bilim -> ilerleme -> olumlu (guven: 1.00)
+    [DOGRUDAN] [0.7|m1] arastirma --gelistirir--> bilim (guven: 0.72)
+    Sonuc: GECTI (3 cikarim, 0.0ms)
+
+  Soru P5Q4: "Demokrasi neden onemlidir?"
+    Beklenen: demokrasi -> ozgurluk -> onemli
+    [DOGRUDAN] [1.0|m1] ekonomi --etki--> onemli (guven: 1.00)
+    [DOGRUDAN] [1.0|m2] cevre koruma --etki--> onemli (guven: 1.00)
+    [DOGRUDAN] [1.0|m2] denge --etki--> onemli (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] gercek --etki--> onemli (guven: 1.00)
+    [DOGRUDAN] [1.0|m2] adalet --etki--> onemli (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] duzen --etki--> onemli (guven: 1.00)
+    [DOGRUDAN] [1.0|m2] insan haklari --etki--> onemli (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] demokrasi --saglar--> ozgurluk (guven: 1.00)
+    ... ve 26 sonuc daha
+    Sonuc: GECTI (34 cikarim, 0.0ms)
+
+  Soru P5Q5: "Ekosistem neden onemlidir?"
+    Beklenen: canli, dengeli
+    [DOGRUDAN] [1.0|m1] ekosistem --icerir--> canli (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] ekosistem --etki--> dengeli (guven: 1.00)
+    Sonuc: GECTI (2 cikarim, 0.0ms)
+
+  --- Stabilite Testi: Onceki Sorularin Tekrari ---
+  Soru P1Q1: "Kedi bir hayvan midir?" -> GECTI
+  Soru P1Q2: "Elma saglikli midir?" -> GECTI
+  Soru P1Q5: "Aslan miyavlar mi?" -> GECTI
+  Soru P2Q1: "Spor neden faydalidir?" -> GECTI
+  Soru P2Q4: "Agac neden onemlidir?" -> GECTI
+  Soru P3Q1: "Kahve saglikli midir?" -> GECTI
+  Soru P3Q3: "Gunes zararli midir?" -> GECTI
+  Soru P4Q1: "Dunya duz mudur?" -> GECTI
+  Soru P4Q2: "Teknoloji faydali midir?" -> GECTI
+
+  Stabilite: 9/9 (100%) onceki soru hala dogru
+  Taxonomy: 104 cluster (43 multi-member)
+    Cluster 5 (27 uye): bakim, bal, besin ogesi, beslenme, cay, dengeli beslenme, egzersiz, ekmek
+    Cluster 36 (19 uye): ait olma, anlayis, arkadaslik, basari, bilincli tuketim, dayaniklilik, destek, empati
+    Cluster 7 (13 uye): arastirma, asci, avukat, bilim dali, doktor, egitim kurumu, hemsire, kitap
+    Cluster 6 (9 uye): enerji, kan dolasimi, oksijen, solunum, su, tarim, temel ihtiyac, toprak
+    Cluster 28 (9 uye): drone, egitim, elestirisel dusunme, geri donusum, guc, iletisim, kaynak dogrulama, mantik
+
+  Faz 5 Ozet: Dogruluk=5.0/5, Nuans=4.5/5, Duzeltme=4.0/4
+  Stabilite: 9/9
+  Performans: yukleme=0.123s, ort.sorgu=0.0ms
+
+  Toplam yuklenen kural: 494
+  State'teki aktif kural: 445
+
+######################################################################
+#  BUYUME GRAFIGI
+######################################################################
+
+  Faz   Kural   Aktif   Dogruluk    Nuans       Duzeltme    Cluster   Sorgu(ms)   
+  --------------------------------------------------------------------------------
+  1     59      59      5.0/5       5.0/5       N/A         16        0.0         
+  2     100     158     5.0/5       5.0/5       N/A         54        0.0         
+  3     88      246     5.0/5       5.0/5       N/A         69        0.0         
+  4     86      287     4.0/4       4.0/4       4.0/4       68        0.2         
+  5     161     445     5.0/5       4.5/5       4.0/4       104       0.0         
+
+######################################################################
+#  METRIK TRENDLERI
+######################################################################
+
+  Dogruluk trendi (oran): 100% -> 100% -> 100% -> 100% -> 100%
+  Nuans trendi (oran):    100% -> 100% -> 100% -> 100% -> 90%
+  Duzeltme trendi (oran): 100% -> 100%
+  Sorgu suresi trendi:    0.0ms -> 0.0ms -> 0.0ms -> 0.2ms -> 0.0ms
+  Cluster buyumesi:       16 -> 54 -> 69 -> 68 -> 104
+
+######################################################################
+#  SONUC
+######################################################################
+
+  IYILESME ALANLARI:
+    [+] Dogruluk korundu veya artti
+    [+] Bilgi duzeltme calisiyor (mass/confidence)
+    [+] Stabilite yuksek (100%)
+
+  ENDISE ALANLARI:
+    [-] Nuans iyilesmedi
+
+  KARAR: EVET - Motor bilgi biriktirikce akillaniytor!
+         3/4 kriterde iyilesme gozlendi.
+
+======================================================================
+  BUYUME TESTI TAMAMLANDI
+======================================================================
