@@ -1,0 +1,389 @@
+
+######################################################################
+#  CHAINOFMEANING v3 OTOPSI RAPORU
+#  Auto-taxonomy, smart gates, rule mass motoru
+#  Motor hicbir sekilde degistirilmeden test ediliyor.
+######################################################################
+
+======================================================================
+  Senaryo A - Celiski Yonetimi
+======================================================================
+  Dogrudan ve dolayli celiskiyi tespit edebiliyor mu?
+
+--- Kural Yukleme ---
+
+  Yukleniyor: [1.0|m1] kahve --etki--> saglikli
+
+  Yukleniyor: [1.0|m1] kafein --etki--> zararli
+
+  Yukleniyor: [1.0|m1] kahve --icerir--> kafein
+
+  State (3 kural):
+    [0.8|m1] kahve --etki--> saglikli
+    [1.0|m1] kafein --etki--> zararli
+    [1.0|m1] kahve --icerir--> kafein
+
+  Taxonomy:
+    Taxonomy State:
+  Cluster 1: [kafein]
+    kafein: etki:zararli
+  Cluster 2: [kahve]
+    kahve: etki:saglikli, icerir:kafein
+
+--- Sorgu: Kahve hakkinda ne biliyorsun? ---
+  Sonuc (3 cikarim):
+    [DOGRUDAN] [1.0|m1] kahve --icerir--> kafein (guven: 1.00)
+    [ZINCIR]   kahve -> kafein -> zararli (guven: 1.00)
+    [DOGRUDAN] [0.8|m1] kahve --etki--> saglikli (guven: 0.85)
+
+--- Degerlendirme ---
+  [+] Mekanik Dogruluk: PASS - 3 kural eklendi. Indirect contradiction saglikli confidence=0.85
+  [+] Cikarim Kalitesi: PASS - Hem dogrudan 'kahve' kurali hem de 'kahve->kafein' zinciri bulundu.
+  [+] Anlam Testi: PASS - Dolayli celiski tespit edildi VE confidence dustu (saglikli: 0.85). Sistem kahve->kafein->zararli zincirini gorup saglikli'yi sorguluyor!
+
+======================================================================
+  Senaryo B - Derin Zincirleme (4 adim)
+======================================================================
+  4 adimlik zinciri kurabiliyor mu?
+
+--- Kural Yukleme ---
+
+  Yukleniyor: [1.0|m1] sokrates --turu--> insan
+
+  Yukleniyor: [1.0|m1] insan --ozellik--> olumlu
+
+  Yukleniyor: [1.0|m1] olumlu --deneyim--> aci
+
+  Yukleniyor: [1.0|m1] aci --gelistirir--> empati
+
+  State (4 kural):
+    [1.0|m1] sokrates --turu--> insan
+    [1.0|m1] insan --ozellik--> olumlu
+    [1.0|m1] olumlu --deneyim--> aci
+    [1.0|m1] aci --gelistirir--> empati
+
+  Taxonomy:
+    Taxonomy State:
+  Cluster 0: [sokrates]
+    sokrates: turu:insan
+  Cluster 1: [insan]
+    insan: ozellik:olumlu
+  Cluster 2: [olumlu]
+    olumlu: deneyim:aci
+  Cluster 3: [aci]
+    aci: gelistirir:empati
+
+--- Sorgu: Sokrates empati gelistirir mi? ---
+  Sonuc (7 cikarim):
+    [DOGRUDAN] [1.0|m1] sokrates --turu--> insan (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] aci --gelistirir--> empati (guven: 1.00)
+    [ZINCIR]   sokrates -> insan -> olumlu (guven: 1.00)
+    [ZINCIR]   sokrates -> insan -> olumlu -> aci (guven: 1.00)
+    [ZINCIR]   sokrates -> insan -> olumlu -> aci -> empati (guven: 1.00)
+    [ZINCIR]   olumlu -> aci -> empati (guven: 1.00)
+    [ZINCIR]   insan -> olumlu -> aci -> empati (guven: 1.00)
+
+--- Degerlendirme ---
+  [+] Mekanik Dogruluk: PASS - 4 kural eklendi, conflict yok.
+  [+] Cikarim Kalitesi: PASS - Sokrates->empati zinciri kuruldu! Derinlik: 4
+  [+] Anlam Testi: PASS - Sokrates'ten empatiye anlam zinciri kuruldu.
+
+======================================================================
+  Senaryo C - Hiyerarsi / Kalitim
+======================================================================
+  Tur hiyerarsisi uzerinden ozellik kalitimi yapabiliyor mu?
+
+--- Kural Yukleme ---
+
+  Yukleniyor: [1.0|m1] meyve --etki--> saglikli
+
+  Yukleniyor: [1.0|m1] elma --turu--> meyve
+
+  Yukleniyor: [1.0|m1] yesil elma --tadi--> eksi
+
+  State (3 kural):
+    [1.0|m1] meyve --etki--> saglikli
+    [1.0|m1] elma --turu--> meyve
+    [1.0|m1] yesil elma --tadi--> eksi
+
+  Taxonomy:
+    Taxonomy State:
+  Cluster 0: [meyve]
+    meyve: etki:saglikli
+  Cluster 1: [elma]
+    elma: turu:meyve
+  Cluster 2: [yesil elma]
+    yesil elma: tadi:eksi
+
+--- Sorgu: Yesil elma saglikli mi? ---
+  Sonuc (4 cikarim):
+    [DOGRUDAN] [1.0|m1] meyve --etki--> saglikli (guven: 1.00)
+    [DOGRUDAN] [1.0|m1] yesil elma --tadi--> eksi (guven: 1.00)
+    [ZINCIR]   elma -> meyve -> saglikli (guven: 1.00)
+    [ZINCIR]   yesil elma -> elma -> meyve -> saglikli (guven: 0.90)
+
+--- Degerlendirme ---
+  [+] Mekanik Dogruluk: PASS - 3 kural eklendi.
+  [+] Cikarim Kalitesi: PASS - Saglikli sonucuna tur hiyerarsisi uzerinden ulasildi!
+  [+] Anlam Testi: PASS - Tur hiyerarsisi uzerinden kalitim yapildi.
+
+======================================================================
+  Senaryo D - Zaman Icinde Evrilme
+======================================================================
+  10 kitap boyunca ayni soruya verilen cevap nasil evriliyor?
+
+--- Kitap 1: Dijital Cag ---
+  Teknoloji kurallari (1):
+    [1.0|m1] teknoloji --saglar--> verimlilik
+  Toplam kural: 3
+  Cikarim sayisi: 2
+
+--- Kitap 2: Saglik Devrimi ---
+  Teknoloji kurallari (3):
+    [1.0|m1] teknoloji --saglar--> verimlilik
+    [1.0|m1] teknoloji --gelistirir--> tip
+    [1.0|m1] teknoloji --etki--> faydali
+  Toplam kural: 6
+  Cikarim sayisi: 5
+
+--- Kitap 3: Egitim ve Teknoloji ---
+  Teknoloji kurallari (5):
+    [1.0|m1] teknoloji --saglar--> verimlilik
+    [1.0|m1] teknoloji --gelistirir--> tip
+    [0.3|m1] teknoloji --etki--> faydali
+    [1.0|m1] teknoloji --destekler--> egitim
+    [1.0|m1] teknoloji --etki--> gerekli
+  Toplam kural: 9
+  Cikarim sayisi: 8
+
+--- Kitap 4: Dijital Bagimlilik ---
+  Teknoloji kurallari (6):
+    [1.0|m1] teknoloji --saglar--> verimlilik
+    [1.0|m1] teknoloji --gelistirir--> tip
+    [0.2|m1] teknoloji --etki--> faydali
+    [1.0|m1] teknoloji --destekler--> egitim
+    [0.5|m1] teknoloji --etki--> gerekli
+    [1.0|m1] teknoloji --yaratir--> bagimlilik
+  Toplam kural: 12
+  Cikarim sayisi: 9
+
+--- Kitap 5: Issizlik Krizi ---
+  Teknoloji kurallari (7):
+    [1.0|m1] teknoloji --saglar--> verimlilik
+    [1.0|m1] teknoloji --gelistirir--> tip
+    [0.2|m1] teknoloji --etki--> faydali
+    [1.0|m1] teknoloji --destekler--> egitim
+    [0.2|m1] teknoloji --etki--> gerekli
+    [1.0|m1] teknoloji --yaratir--> bagimlilik
+    [1.0|m1] teknoloji --etki--> tehlikeli
+  Toplam kural: 15
+  Cikarim sayisi: 10
+
+--- Kitap 6: Yalnizlik Cagi ---
+  Teknoloji kurallari (9):
+    [1.0|m1] teknoloji --saglar--> verimlilik
+    [1.0|m1] teknoloji --gelistirir--> tip
+    [0.1|m1] teknoloji --etki--> faydali
+    [1.0|m1] teknoloji --destekler--> egitim
+    [0.1|m1] teknoloji --etki--> gerekli
+    [1.0|m1] teknoloji --yaratir--> bagimlilik
+    [0.2|m1] teknoloji --etki--> tehlikeli
+    [1.0|m1] teknoloji --azaltir--> sosyal bag
+    [1.0|m1] teknoloji --etki--> yikici
+  Toplam kural: 18
+  Cikarim sayisi: 11
+
+--- Kitap 7: Dengeli Bakis ---
+  Teknoloji kurallari (11):
+    [1.0|m1] teknoloji --saglar--> verimlilik
+    [1.0|m1] teknoloji --gelistirir--> tip
+    [0.1|m1] teknoloji --etki--> faydali
+    [1.0|m1] teknoloji --destekler--> egitim
+    [0.1|m1] teknoloji --etki--> gerekli
+    [1.0|m1] teknoloji --yaratir--> bagimlilik
+    [0.1|m1] teknoloji --etki--> tehlikeli
+    [1.0|m1] teknoloji --azaltir--> sosyal bag
+    [0.3|m1] teknoloji --etki--> yikici
+    [0.9|m1] teknoloji --hem--> faydali
+    [1.0|m1] teknoloji --hem--> riskli
+  Toplam kural: 21
+  Cikarim sayisi: 12
+
+--- Kitap 8: Elestirisel Dusunce ---
+  Teknoloji kurallari (12):
+    [1.0|m1] teknoloji --saglar--> verimlilik
+    [1.0|m1] teknoloji --gelistirir--> tip
+    [0.1|m1] teknoloji --etki--> faydali
+    [1.0|m1] teknoloji --destekler--> egitim
+    [1.0|m1] teknoloji --yaratir--> bagimlilik
+    [0.1|m1] teknoloji --etki--> tehlikeli
+    [1.0|m1] teknoloji --azaltir--> sosyal bag
+    [0.1|m1] teknoloji --etki--> yikici
+    [0.9|m1] teknoloji --hem--> faydali
+    [1.0|m1] teknoloji --hem--> riskli
+    [1.0|m1] teknoloji --gerektirir--> elestiri
+    [1.0|m1] teknoloji --etki--> notr
+  Toplam kural: 23
+  Cikarim sayisi: 13
+
+--- Kitap 9: Bilincli Kullanim ---
+  Teknoloji kurallari (13):
+    [1.0|m1] teknoloji --saglar--> verimlilik
+    [1.0|m1] teknoloji --gelistirir--> tip
+    [0.1|m1] teknoloji --etki--> faydali
+    [1.0|m1] teknoloji --destekler--> egitim
+    [1.0|m1] teknoloji --yaratir--> bagimlilik
+    [0.1|m1] teknoloji --etki--> tehlikeli
+    [1.0|m1] teknoloji --azaltir--> sosyal bag
+    [0.1|m1] teknoloji --etki--> yikici
+    [0.9|m1] teknoloji --hem--> faydali
+    [1.0|m1] teknoloji --hem--> riskli
+    [1.0|m1] teknoloji --gerektirir--> elestiri
+    [0.5|m1] teknoloji --etki--> notr
+    [1.0|m1] teknoloji --etki--> iyi (sartli)
+  Toplam kural: 26
+  Cikarim sayisi: 15
+
+--- Kitap 10: Gelecek Vizyonu ---
+  Teknoloji kurallari (14):
+    [1.0|m1] teknoloji --saglar--> verimlilik
+    [1.0|m1] teknoloji --gelistirir--> tip
+    [0.1|m1] teknoloji --etki--> faydali
+    [1.0|m1] teknoloji --destekler--> egitim
+    [1.0|m1] teknoloji --yaratir--> bagimlilik
+    [1.0|m1] teknoloji --azaltir--> sosyal bag
+    [0.1|m1] teknoloji --etki--> yikici
+    [0.9|m1] teknoloji --hem--> faydali
+    [1.0|m1] teknoloji --hem--> riskli
+    [1.0|m1] teknoloji --gerektirir--> elestiri
+    [0.1|m1] teknoloji --etki--> notr
+    [0.3|m1] teknoloji --etki--> iyi (sartli)
+    [1.0|m1] teknoloji --potansiyel--> buyuk
+    [1.0|m1] teknoloji --etki--> umut verici
+  Toplam kural: 28
+  Cikarim sayisi: 16
+
+--- Taxonomy Durumu (Son) ---
+
+  Taxonomy:
+    Taxonomy State:
+  Cluster 1: [bilincli kullanim, egitim, verimlilik]
+    bilincli kullanim: etki:olumlu, yapar:teknoloji
+    egitim: etki:olumlu
+    verimlilik: etki:olumlu
+  Cluster 2: [internet]
+    internet: saglar:iletisim
+  Cluster 4: [tip]
+    tip: etki:hayat kurtarir
+  Cluster 9: [bagimlilik, yalnizlik]
+    bagimlilik: etki:zararli
+    yalnizlik: etki:zararli
+  Cluster 10: [sosyal medya]
+    sosyal medya: azaltir:dikkat
+  Cluster 11: [otomasyon]
+    otomasyon: yaratir:issizlik
+  Cluster 12: [issizlik]
+    issizlik: etki:olumsuz
+  Cluster 18: [denge]
+    denge: etki:onemli
+  Cluster 20: [bilinc]
+    bilinc: etki:koruyucu
+  Cluster 25: [sorumluluk]
+    sorumluluk: etki:belirleyici
+  Cluster 26: [teknoloji]
+    teknoloji: azaltir:sosyal bag, destekler:egitim, etki:faydali, etki:gerekli, etki:iyi (sartli), etki:notr, etki:tehlikeli, etki:umut verici, etki:yikici, gelistirir:tip, gerektirir:elestiri, hem:faydali, hem:riskli, potansiyel:buyuk, saglar:verimlilik, yaratir:bagimlilik
+
+--- Degerlendirme ---
+  [+] Mekanik Dogruluk: PASS - Confidence skorlari evrildi ve forget gate tetiklendi.
+
+  Sentiment trend: ['1.00', '3.00', '4.30', '2.52', '1.23', '0.77', '2.60', '2.88', '3.88', '4.13']
+  [~] Cikarim Kalitesi: PARTIAL - Kismi trend: ya basi ya ortasi dogru ama ikisi birden degil.
+  [~] Anlam Testi: PARTIAL - Kismi iyilesme: non-mechanical confidence var. Tam ogrenme icin ikisi de gerekli.
+
+======================================================================
+  Senaryo E - Stres Testi (1000 kural)
+======================================================================
+  1000 kural ile performans ve cikarim kalitesi.
+
+--- Kural Yukleme (1000 kural) ---
+  Yukleme suresi: 3.643 saniye
+  State'teki kural sayisi: 906 (bazi kurallar forget gate ile silinmis olabilir)
+
+--- Taxonomy Ozeti ---
+  Toplam cluster: 39
+  Multi-member cluster: 1
+    Cluster 898 (2 uye): kartal, sanatci
+
+--- Sorgu Performansi ---
+  [0.0000s] Kedi hakkinda ne biliyorsun?: 18 sonuc
+  [0.0000s] Istanbul ve doktor iliskisi?: 42 sonuc
+  [0.0000s] Kirmizi iyi midir?: 92 sonuc
+  [0.0000s] Hayvanlar hakkinda genel bilgi: 65 sonuc
+  [0.0000s] Meslekler ve ozellikler: 119 sonuc
+  [0.0000s] Sehirler ve etkileri: 123 sonuc
+  [0.0000s] Tek terim sorgusu: 19 sonuc
+  [0.0000s] Cok terimli sorgu: 150 sonuc
+  [0.0000s] Var olmayan terim: 0 sonuc
+  [0.0000s] Tum renkler: 107 sonuc
+
+  Ortalama sorgu suresi: 0.0000s
+  Maksimum sorgu suresi: 0.0000s
+
+--- Degerlendirme ---
+  [+] Mekanik Dogruluk: PASS - Performans kabul edilebilir. Yukleme: 3.643s, Ort. sorgu: 0.0000s
+  [~] Cikarim Kalitesi: PARTIAL - Var olmayan terim filtrelendi ama diger sorgular cok sonuc donduruyor (max: 150). Noise yuksek.
+  [~] Anlam Testi: PARTIAL - Sadece 1 multi-member cluster. Taxonomy basliyor ama yeterli degil.
+
+======================================================================
+  OZET TABLOSU
+======================================================================
+
+  Senaryo                                       Mekanik      Cikarim      Anlam       
+  ---------------------------------------------------------------------------------
+  Celiski Yonetimi                              PASS         PASS         PASS        
+  Derin Zincirleme (4 adim)                     PASS         PASS         PASS        
+  Hiyerarsi / Kalitim                           PASS         PASS         PASS        
+  Zaman Icinde Evrilme                          PASS         PARTIAL      PARTIAL     
+  Stres Testi (1000 kural)                      PASS         PARTIAL      PARTIAL     
+
+  Toplam: 11 PASS, 4 PARTIAL, 0 FAIL
+  (15 degerlendirme uzerinden)
+
+======================================================================
+  v1 vs v2 vs v3 KARSILASTIRMA
+======================================================================
+
+  Senaryo                   Katman       v1         v2         v3         Degisim        
+  ----------------------------------------------------------------------------------
+  Celiski Yonetimi          Mekanik      PASS       PASS       PASS       ayni           
+                            Cikarim      PASS       PASS       PASS       ayni           
+                            Anlam        PARTIAL    PARTIAL    PASS       IYILESTI       
+  ----------------------------------------------------------------------------------
+  Derin Zincirleme (4 adim) Mekanik      PASS       PASS       PASS       ayni           
+                            Cikarim      PARTIAL    PASS       PASS       ayni           
+                            Anlam        FAIL       PASS       PASS       ayni           
+  ----------------------------------------------------------------------------------
+  Hiyerarsi / Kalitim       Mekanik      PASS       PASS       PASS       ayni           
+                            Cikarim      PARTIAL    PASS       PASS       ayni           
+                            Anlam        FAIL       PASS       PASS       ayni           
+  ----------------------------------------------------------------------------------
+  Zaman Icinde Evrilme      Mekanik      PASS       PASS       PASS       ayni           
+                            Cikarim      PARTIAL    PARTIAL    PARTIAL    ayni           
+                            Anlam        FAIL       FAIL       PARTIAL    IYILESTI       
+  ----------------------------------------------------------------------------------
+  Stres Testi (1000 kural)  Mekanik      PASS       PASS       PASS       ayni           
+                            Cikarim      PASS       PARTIAL    PARTIAL    ayni           
+                            Anlam        FAIL       FAIL       PARTIAL    IYILESTI       
+  ----------------------------------------------------------------------------------
+
+  Motor           PASS       PARTIAL    FAIL      
+  ---------------------------------------------
+  v1              7          4          4         
+  v2              10         3          2         
+  v3              11         4          0         
+
+  v2 -> v3 degisim: PASS 10 -> 11 (+1), FAIL 2 -> 0 (-2)
+
+======================================================================
+  OTOPSI TAMAMLANDI
+======================================================================
