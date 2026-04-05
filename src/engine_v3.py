@@ -36,6 +36,8 @@ class RuleEngineV3:
         self.history = []
         self._by_subject = defaultdict(list)
         self._by_obj = defaultdict(list)
+        self._by_subject_relation = defaultdict(list)
+        self._by_relation = defaultdict(list)
         self._max_depth = 10
         self.taxonomy = Taxonomy(similarity_threshold=0.3)
 
@@ -75,9 +77,11 @@ class RuleEngineV3:
 
     def forget_gate(self, new_rule):
         """Support-aware forgetting. Decay = resistance / (resistance + new_mass)
-        where resistance = existing_mass + support_count."""
+        where resistance = existing_mass + support_count.
+        Uses _by_subject_relation index to find contradictions without scanning all state."""
         forgotten = []
-        for existing in self.state:
+        key = (new_rule.subject, new_rule.relation)
+        for existing in self._by_subject_relation.get(key, []):
             if existing.contradicts(new_rule):
                 support = self._count_support(existing)
                 resistance = existing.mass + support
@@ -94,12 +98,9 @@ class RuleEngineV3:
 
     def input_gate(self, new_rule):
         integrated = []
-        for existing in self.state:
-            if (
-                existing.subject == new_rule.subject
-                and existing.relation == new_rule.relation
-                and existing.obj == new_rule.obj
-            ):
+        key = (new_rule.subject, new_rule.relation)
+        for existing in self._by_subject_relation.get(key, []):
+            if existing.obj == new_rule.obj:
                 old_conf = existing.confidence
                 old_mass = existing.mass
                 existing.confidence = min(1.0, existing.confidence + 0.2)
@@ -112,6 +113,8 @@ class RuleEngineV3:
         self.state.append(new_rule)
         self._by_subject[new_rule.subject].append(new_rule)
         self._by_obj[new_rule.obj].append(new_rule)
+        self._by_subject_relation[key].append(new_rule)
+        self._by_relation[new_rule.relation].append(new_rule)
         integrated.append(f"  INPUT: Yeni kural eklendi -> '{new_rule}'")
         return integrated
 
@@ -121,12 +124,41 @@ class RuleEngineV3:
         """Check if new_rule indirectly contradicts existing rules through chains.
         Example: 'kafein etki zararli' arrives, 'kahve etki saglikli' exists,
         and there's a path kahve -> kafein (via kahve icerir kafein).
-        If same relation but different obj -> indirect contradiction."""
+        If same relation but different obj -> indirect contradiction.
+        Optimized: pre-compute entities that can reach new_rule.subject via backward
+        BFS, then only check rules whose subject is in that set."""
         indirect_hits = []
 
-        # For each existing rule with the same relation but different obj
-        for existing in self.state:
-            if existing.relation != new_rule.relation:
+        same_rel_rules = self._by_relation.get(new_rule.relation, [])
+        if not same_rel_rules:
+            return indirect_hits
+
+        # Pre-compute: which entities can reach new_rule.subject?
+        # BFS backward from new_rule.subject
+        max_depth = min(self._max_depth, 6)
+        can_reach = set()
+        queue = deque([(new_rule.subject, 0)])
+        visited = {new_rule.subject}
+        while queue:
+            current, depth = queue.popleft()
+            if depth >= max_depth:
+                continue
+            # Go backward: find rules whose obj == current
+            for rule in self._by_obj.get(current, []):
+                if rule.confidence < 0.2:
+                    continue
+                prev_node = rule.subject
+                if prev_node not in visited:
+                    visited.add(prev_node)
+                    can_reach.add(prev_node)
+                    queue.append((prev_node, depth + 1))
+
+        if not can_reach:
+            return indirect_hits
+
+        # Only check rules with the same relation whose subject can reach new_rule.subject
+        for existing in same_rel_rules:
+            if existing.subject not in can_reach:
                 continue
             if existing.obj == new_rule.obj:
                 continue
@@ -135,7 +167,7 @@ class RuleEngineV3:
             if existing.confidence < 0.2:
                 continue
 
-            # Check if there's a path from existing.subject to new_rule.subject
+            # Path is known to exist (subject is in can_reach), get the actual path
             path = self._find_path(existing.subject, new_rule.subject)
             if path:
                 # Indirect contradiction found!
@@ -180,38 +212,74 @@ class RuleEngineV3:
         """After a new rule is added, check if it creates a bridge between
         existing rules that are now indirectly contradictory.
         Example: 'kahve icerir kafein' is added, connecting
-        'kahve etki saglikli' and 'kafein etki zararli'."""
+        'kahve etki saglikli' and 'kafein etki zararli'.
+        Optimized: pre-compute reachable subjects from new_rule.subject via BFS,
+        then only check candidate rule_b's whose subject is reachable."""
         bridge_hits = []
 
-        # The new rule connects new_rule.subject -> new_rule.obj
-        # Check: are there rules about new_rule.subject and rules about new_rule.obj
-        # that share a relation but have different objects?
-        for rule_a in self._by_subject.get(new_rule.subject, []):
+        rules_a = self._by_subject.get(new_rule.subject, [])
+        if not rules_a:
+            return bridge_hits
+
+        # Collect the set of relations rule_a's have (to filter rule_b candidates)
+        rule_a_relations = set()
+        for rule_a in rules_a:
+            if rule_a is not new_rule and rule_a.confidence >= 0.2:
+                rule_a_relations.add(rule_a.relation)
+        if not rule_a_relations:
+            return bridge_hits
+
+        # Pre-compute reachable subjects from new_rule.subject via BFS (limited depth)
+        max_depth = min(self._max_depth, 6)
+        reachable = set()
+        queue = deque([(new_rule.subject, 0)])
+        visited = {new_rule.subject}
+        while queue:
+            current, depth = queue.popleft()
+            if depth >= max_depth:
+                continue
+            for rule in self._by_subject.get(current, []):
+                if rule.confidence < 0.2:
+                    continue
+                next_node = rule.obj
+                if next_node not in visited:
+                    visited.add(next_node)
+                    reachable.add(next_node)
+                    queue.append((next_node, depth + 1))
+
+        if not reachable:
+            return bridge_hits
+
+        # Now check candidate rule_b's: rules whose subject is reachable AND
+        # has matching relation with some rule_a
+        for rule_a in rules_a:
             if rule_a is new_rule:
                 continue
             if rule_a.confidence < 0.2:
                 continue
-            for rule_b in self.state:
-                if rule_b.confidence < 0.2:
-                    continue
-                if rule_b.subject == rule_a.subject:
-                    continue
-                if rule_b.relation != rule_a.relation:
-                    continue
-                if rule_b.obj == rule_a.obj:
-                    continue
-                # rule_a and rule_b have same relation, different obj, different subject
-                # Check if there's a path from rule_a.subject to rule_b.subject through the new bridge
-                path = self._find_path(rule_a.subject, rule_b.subject)
-                if path:
-                    old_conf = rule_a.confidence
-                    decay = 0.85
-                    rule_a.confidence *= decay
-                    bridge_hits.append(
-                        f"  BRIDGE: '{rule_a}' dolayli celiski (kopru: {new_rule}, "
-                        f"zincir: {' -> '.join(path)}, celisen: {rule_b}) "
-                        f"({old_conf:.2f} -> {rule_a.confidence:.2f})"
-                    )
+            # Only check rules with subjects that are reachable
+            for subj in reachable:
+                for rule_b in self._by_subject.get(subj, []):
+                    if rule_b.relation != rule_a.relation:
+                        continue
+                    if rule_b.confidence < 0.2:
+                        continue
+                    if rule_b.subject == rule_a.subject:
+                        continue
+                    if rule_b.obj == rule_a.obj:
+                        continue
+                    # rule_a and rule_b have same relation, different obj, different subject
+                    # Path is already known to exist (subject is reachable)
+                    path = self._find_path(rule_a.subject, rule_b.subject)
+                    if path:
+                        old_conf = rule_a.confidence
+                        decay = 0.85
+                        rule_a.confidence *= decay
+                        bridge_hits.append(
+                            f"  BRIDGE: '{rule_a}' dolayli celiski (kopru: {new_rule}, "
+                            f"zincir: {' -> '.join(path)}, celisen: {rule_b}) "
+                            f"({old_conf:.2f} -> {rule_a.confidence:.2f})"
+                        )
 
         return bridge_hits
 
@@ -227,12 +295,23 @@ class RuleEngineV3:
 
         # Clean dead rules
         dead = [r for r in self.state if r.confidence < 0.1]
-        for d in dead:
-            self.state.remove(d)
-            if d in self._by_subject.get(d.subject, []):
-                self._by_subject[d.subject].remove(d)
-            if d in self._by_obj.get(d.obj, []):
-                self._by_obj[d.obj].remove(d)
+        if dead:
+            dead_set = set(id(d) for d in dead)
+            self.state = [r for r in self.state if id(r) not in dead_set]
+            for d in dead:
+                subj_list = self._by_subject.get(d.subject)
+                if subj_list:
+                    self._by_subject[d.subject] = [r for r in subj_list if r is not d]
+                obj_list = self._by_obj.get(d.obj)
+                if obj_list:
+                    self._by_obj[d.obj] = [r for r in obj_list if r is not d]
+                key = (d.subject, d.relation)
+                sr_list = self._by_subject_relation.get(key)
+                if sr_list:
+                    self._by_subject_relation[key] = [r for r in sr_list if r is not d]
+                rel_list = self._by_relation.get(d.relation)
+                if rel_list:
+                    self._by_relation[d.relation] = [r for r in rel_list if r is not d]
 
         # Update taxonomy
         self.taxonomy.update_profile(new_rule.subject, new_rule.relation, new_rule.obj)

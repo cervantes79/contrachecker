@@ -17,13 +17,19 @@ class Taxonomy:
         # entity -> cluster_id
         self._entity_cluster = {}
         self._next_cluster_id = 0
+        # Inverted index: (relation, obj) -> set of entity names
+        self._pattern_index = defaultdict(set)
+        # Dirty entities needing reclustering
+        self._dirty = set()
 
     def update_profile(self, entity, relation, obj):
         """Add a (relation, obj) pair to an entity's profile."""
         entity = entity.lower()
         relation = relation.lower()
         obj = obj.lower()
-        self._profiles[entity].add((relation, obj))
+        pattern = (relation, obj)
+        self._profiles[entity].add(pattern)
+        self._pattern_index[pattern].add(entity)
 
     def _jaccard(self, set_a, set_b):
         """Jaccard similarity index between two sets."""
@@ -34,7 +40,8 @@ class Taxonomy:
         return len(intersection) / len(union)
 
     def recluster_entity(self, entity):
-        """Find best cluster for entity based on Jaccard similarity, or create new one."""
+        """Find best cluster for entity based on Jaccard similarity, or create new one.
+        Uses inverted index to only compare against entities sharing at least one pattern."""
         entity = entity.lower()
         profile = self._profiles.get(entity)
         if not profile:
@@ -48,17 +55,27 @@ class Taxonomy:
                 del self._clusters[old_cluster]
             del self._entity_cluster[entity]
 
-        # Find best matching cluster
+        # Use inverted index to find candidate entities sharing at least one pattern
+        candidates = set()
+        for pattern in profile:
+            candidates.update(self._pattern_index.get(pattern, set()))
+        candidates.discard(entity)
+
+        # Find best matching cluster among candidates only
         best_cluster = None
         best_similarity = 0.0
 
-        for cluster_id, members in self._clusters.items():
-            for member in members:
-                member_profile = self._profiles.get(member, set())
-                sim = self._jaccard(profile, member_profile)
-                if sim > best_similarity:
-                    best_similarity = sim
-                    best_cluster = cluster_id
+        for candidate in candidates:
+            candidate_profile = self._profiles.get(candidate, set())
+            sim = self._jaccard(profile, candidate_profile)
+            if sim > best_similarity:
+                best_similarity = sim
+                candidate_cluster = self._entity_cluster.get(candidate)
+                if candidate_cluster is not None:
+                    best_cluster = candidate_cluster
+                    # Early exit if perfect match
+                    if sim >= 1.0:
+                        break
 
         if best_similarity >= self.similarity_threshold and best_cluster is not None:
             self._clusters[best_cluster].add(entity)
@@ -69,6 +86,19 @@ class Taxonomy:
             self._next_cluster_id += 1
             self._clusters[cluster_id].add(entity)
             self._entity_cluster[entity] = cluster_id
+
+    def mark_dirty(self, entity):
+        """Mark an entity as needing reclustering."""
+        self._dirty.add(entity.lower())
+
+    def flush_dirty(self):
+        """Recluster all dirty entities at once."""
+        if not self._dirty:
+            return
+        dirty = self._dirty.copy()
+        self._dirty.clear()
+        for entity in dirty:
+            self.recluster_entity(entity)
 
     def get_cluster_members(self, entity):
         """Get all entities in the same cluster as entity."""
