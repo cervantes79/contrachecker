@@ -482,12 +482,87 @@ class RuleEngineV4:
                         parents.append((p, c * 0.9))
         return parents
 
+    # --- Cluster-aware query routing ---
+
+    def _get_relevant_entities(self, terms):
+        """Find entities that are relevant to the query terms using taxonomy clusters.
+        Returns a set of entity names to restrict BFS to, or None if terms are absent
+        from both the graph and taxonomy.
+
+        Strategy:
+        1. Add query terms and their taxonomy cluster siblings
+        2. Do a shallow BFS (2 hops forward, 2 hops backward) from each term
+           to find entities reachable within short chains
+        3. This captures chains like: term_A -> X -> Y -> term_B
+        """
+        relevant = set()
+
+        # 1. Add terms themselves
+        for term in terms:
+            relevant.add(term)
+
+        # Check if ANY term is in the graph at all
+        any_in_graph = False
+        for term in terms:
+            if self._by_subject.get(term) or self._by_obj.get(term):
+                any_in_graph = True
+                break
+
+        # If no terms are in the graph and no clusters, return None (full fallback)
+        if not any_in_graph:
+            has_cluster = any(self.taxonomy.get_cluster_members(t) for t in terms)
+            if not has_cluster:
+                return None
+
+        # 2. Add cluster members for each term
+        for term in terms:
+            members = self.taxonomy.get_cluster_members(term)
+            relevant.update(members)
+
+        # 3. Shallow BFS from each term (forward and backward, 2 hops)
+        #    This is much cheaper than full BFS because we limit hops, not node count
+        hop_limit = 2
+        max_neighbors_per_hop = 100  # Limit fan-out to keep set small
+
+        for term in terms:
+            # Forward BFS: term -> obj1 -> obj2
+            frontier = {term}
+            for _ in range(hop_limit):
+                next_frontier = set()
+                for entity in frontier:
+                    rules = self._by_subject.get(entity, [])
+                    # Take top-confidence rules if too many
+                    if len(rules) > max_neighbors_per_hop:
+                        rules = sorted(rules, key=lambda r: r.confidence, reverse=True)[:max_neighbors_per_hop]
+                    for rule in rules:
+                        if rule.confidence >= 0.2:
+                            next_frontier.add(rule.obj)
+                relevant.update(next_frontier)
+                frontier = next_frontier
+
+            # Backward BFS: subj2 -> subj1 -> term
+            frontier = {term}
+            for _ in range(hop_limit):
+                next_frontier = set()
+                for entity in frontier:
+                    rules = self._by_obj.get(entity, [])
+                    if len(rules) > max_neighbors_per_hop:
+                        rules = sorted(rules, key=lambda r: r.confidence, reverse=True)[:max_neighbors_per_hop]
+                    for rule in rules:
+                        if rule.confidence >= 0.2:
+                            next_frontier.add(rule.subject)
+                relevant.update(next_frontier)
+                frontier = next_frontier
+
+        return relevant
+
     # --- Forward chaining ---
 
-    def _find_chains(self, start, max_depth=None, max_nodes=5000, max_fanout=50):
+    def _find_chains(self, start, max_depth=None, max_nodes=5000, max_fanout=50, allowed_nodes=None):
         """Ileri zincirleme: BFS ile start'tan ilerle.
         max_nodes: BFS'in ziyaret edecegi maksimum dugum (buyuk graflarda patlama onleme)
-        max_fanout: Her dugumden takip edilecek maksimum kural (en yuksek guvenli olanlar)"""
+        max_fanout: Her dugumden takip edilecek maksimum kural (en yuksek guvenli olanlar)
+        allowed_nodes: If set, only explore nodes in this set."""
         if max_depth is None:
             max_depth = self._max_depth
         chains = []
@@ -512,6 +587,9 @@ class RuleEngineV4:
                 if rule.confidence < 0.2:
                     continue
                 next_node = rule.obj
+                # Skip if not in allowed nodes (cluster-aware filtering)
+                if allowed_nodes is not None and next_node not in allowed_nodes:
+                    continue
                 if next_node in path:
                     continue
                 if next_node in visited_nodes:
@@ -530,10 +608,11 @@ class RuleEngineV4:
 
     # --- Backward chaining ---
 
-    def _find_chains_backward(self, target, max_depth=None, max_nodes=5000, max_fanout=50):
+    def _find_chains_backward(self, target, max_depth=None, max_nodes=5000, max_fanout=50, allowed_nodes=None):
         """Geri zincirleme: BFS ile target'a dogru gerile.
         max_nodes: BFS'in ziyaret edecegi maksimum dugum.
-        max_fanout: Her dugumden takip edilecek maksimum kural."""
+        max_fanout: Her dugumden takip edilecek maksimum kural.
+        allowed_nodes: If set, only explore nodes in this set."""
         if max_depth is None:
             max_depth = self._max_depth
         chains = []
@@ -557,6 +636,9 @@ class RuleEngineV4:
                 if rule.confidence < 0.2:
                     continue
                 prev_node = rule.subject
+                # Skip if not in allowed nodes (cluster-aware filtering)
+                if allowed_nodes is not None and prev_node not in allowed_nodes:
+                    continue
                 if prev_node in path:
                     continue
                 if prev_node in visited_nodes:
@@ -598,7 +680,22 @@ class RuleEngineV4:
             max_fanout = 10
             max_direct = 50
 
+        # --- Cluster-aware routing ---
+        # Use taxonomy to narrow the search space BEFORE doing BFS
+        allowed_nodes = None
+        if state_size > 100000:
+            relevant = self._get_relevant_entities(terms)
+            if relevant is not None and len(relevant) > 0:
+                allowed_nodes = relevant
+                # With cluster routing, we can afford higher limits since search space is small
+                max_nodes = 5000
+                max_fanout = 100
+                max_direct = 500
+                effective_depth = min(self._max_depth, 5)
+
         # 1. Dogrudan eslesme (limitli)
+        # Note: direct results are NOT filtered by allowed_nodes since they
+        # are cheap O(1) lookups and we want to preserve accuracy
         for term in terms:
             count = 0
             rules_for_term = self._by_subject.get(term, [])
@@ -631,7 +728,8 @@ class RuleEngineV4:
 
         # 2. Ileri zincirleme
         for term in terms:
-            chains = self._find_chains(term, max_depth=effective_depth, max_nodes=max_nodes, max_fanout=max_fanout)
+            chains = self._find_chains(term, max_depth=effective_depth, max_nodes=max_nodes,
+                                       max_fanout=max_fanout, allowed_nodes=allowed_nodes)
             for path, conf in chains:
                 chain_str = " -> ".join(path)
                 if chain_str not in seen_chains and len(path) > 2:
@@ -644,7 +742,8 @@ class RuleEngineV4:
 
         # 3. Geri zincirleme
         for term in terms:
-            chains = self._find_chains_backward(term, max_depth=effective_depth, max_nodes=max_nodes, max_fanout=max_fanout)
+            chains = self._find_chains_backward(term, max_depth=effective_depth, max_nodes=max_nodes,
+                                                max_fanout=max_fanout, allowed_nodes=allowed_nodes)
             for path, conf in chains:
                 chain_str = " -> ".join(path)
                 if chain_str not in seen_chains and len(path) > 2:
@@ -682,11 +781,13 @@ class RuleEngineV4:
                             "confidence": inherited_conf,
                         })
 
-        # 5. Terimler arasi baglanti (buyuk veri setlerinde atla - cok pahali)
-        if len(terms) >= 2 and state_size < 500000:
+        # 5. Terimler arasi baglanti
+        # With cluster routing this is cheap, so always run it
+        if len(terms) >= 2 and (allowed_nodes is not None or state_size < 500000):
             term_set = set(terms)
             for term in terms:
-                for path, conf in self._find_chains(term, max_depth=effective_depth, max_nodes=max_nodes, max_fanout=max_fanout):
+                for path, conf in self._find_chains(term, max_depth=effective_depth, max_nodes=max_nodes,
+                                                    max_fanout=max_fanout, allowed_nodes=allowed_nodes):
                     endpoint = path[-1]
                     if endpoint in term_set and endpoint != term:
                         chain_str = " -> ".join(path)
