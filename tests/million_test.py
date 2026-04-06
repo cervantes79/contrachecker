@@ -1912,13 +1912,17 @@ def run_million_test():
     all_rules = []
     for name, gen_func in generators:
         domain_rules = gen_func()
-        print(f"  {name}: {len(domain_rules):,} kural")
-        all_rules.extend(domain_rules)
+        # Domain bilgisini 6-tuple olarak ekle: (subject, relation, obj, confidence, mass, source)
+        domain_key = name.lower().replace(" & ", "_").replace(" ", "_")
+        domain_rules_full = [(s, r, o, 1.0, 1, domain_key) for s, r, o in domain_rules]
+        print(f"  {name} [{domain_key}]: {len(domain_rules_full):,} kural")
+        all_rules.extend(domain_rules_full)
 
     # Cross-domain baglantilar
     cross_links = generate_cross_domain_links()
-    all_rules.extend(cross_links)
-    print(f"  Cross-domain: {len(cross_links)} kural")
+    cross_links_full = [(s, r, o, 1.0, 1, "cross_domain") for s, r, o in cross_links]
+    all_rules.extend(cross_links_full)
+    print(f"  Cross-domain: {len(cross_links_full)} kural")
 
     t_gen_end = time.time()
     print(f"\n  Toplam uretilen: {len(all_rules):,} kural")
@@ -1941,7 +1945,7 @@ def run_million_test():
     engine = RuleEngineV4(db_path=db_path, taxonomy_threshold=0.3)
 
     # Bulk load - taxonomy atla (cok yavas olur 1M icin)
-    loaded = engine.bulk_load(all_rules, source="million_test", skip_taxonomy=True)
+    loaded = engine.bulk_load(all_rules, skip_taxonomy=True)
 
     t_load_end = time.time()
     load_time = t_load_end - t_load_start

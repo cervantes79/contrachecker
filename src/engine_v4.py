@@ -56,6 +56,8 @@ class RuleEngineV4:
         self._by_obj = defaultdict(list)
         self._by_subject_relation = defaultdict(list)
         self._by_relation = defaultdict(list)
+        self._by_domain = defaultdict(set)  # domain -> set of entity names
+        self._entity_domains = defaultdict(set)  # entity -> set of domain names
         self._max_depth = 10
         self.taxonomy = Taxonomy(similarity_threshold=taxonomy_threshold)
 
@@ -76,6 +78,12 @@ class RuleEngineV4:
             key = (rule.subject, rule.relation)
             self._by_subject_relation[key].append(rule)
             self._by_relation[rule.relation].append(rule)
+            # Domain indeksi
+            if rule.source and rule.source != "direct":
+                self._by_domain[rule.source].add(rule.subject)
+                self._by_domain[rule.source].add(rule.obj)
+                self._entity_domains[rule.subject].add(rule.source)
+                self._entity_domains[rule.obj].add(rule.source)
 
         # Taxonomy profillerini yukle
         profiles = self.store.load_all_profiles()
@@ -412,6 +420,8 @@ class RuleEngineV4:
         self._by_obj.clear()
         self._by_subject_relation.clear()
         self._by_relation.clear()
+        self._by_domain.clear()
+        self._entity_domains.clear()
 
         cursor = self.store.conn.execute(
             "SELECT id, subject, relation, obj, confidence, mass, source FROM rules WHERE confidence >= 0.1"
@@ -430,6 +440,12 @@ class RuleEngineV4:
                 key = (rule.subject, rule.relation)
                 self._by_subject_relation[key].append(rule)
                 self._by_relation[rule.relation].append(rule)
+                # Domain indeksi
+                if source and source != "direct" and source != "bulk":
+                    self._by_domain[source].add(subject)
+                    self._by_domain[source].add(obj)
+                    self._entity_domains[subject].add(source)
+                    self._entity_domains[obj].add(source)
 
     def _rebuild_taxonomy(self):
         """Taxonomy'yi tum kurallardan yeniden kur."""
@@ -482,79 +498,46 @@ class RuleEngineV4:
                         parents.append((p, c * 0.9))
         return parents
 
-    # --- Cluster-aware query routing ---
+    # --- Domain-aware query routing ---
 
     def _get_relevant_entities(self, terms):
-        """Find entities that are relevant to the query terms using taxonomy clusters.
-        Returns a set of entity names to restrict BFS to, or None if terms are absent
-        from both the graph and taxonomy.
+        """Find entities relevant to query terms using DOMAIN routing.
 
         Strategy:
-        1. Add query terms and their taxonomy cluster siblings
-        2. Do a shallow BFS (2 hops forward, 2 hops backward) from each term
-           to find entities reachable within short chains
-        3. This captures chains like: term_A -> X -> Y -> term_B
+        1. Find which domains the query terms belong to
+        2. Collect ALL entities from those domains
+        3. This gives ~50K entities per domain instead of ~1.4M total
+        4. If no domain found, fall back to direct neighbors only
         """
-        relevant = set()
-
-        # 1. Add terms themselves
+        # 1. Find domains for each term AND their direct neighbors
+        relevant_domains = set()
         for term in terms:
-            relevant.add(term)
+            domains = self._entity_domains.get(term, set())
+            relevant_domains.update(domains)
+            # Also include domains of direct neighbors (1 hop)
+            for rule in self._by_subject.get(term, [])[:100]:
+                relevant_domains.update(self._entity_domains.get(rule.obj, set()))
+            for rule in self._by_obj.get(term, [])[:100]:
+                relevant_domains.update(self._entity_domains.get(rule.subject, set()))
 
-        # Check if ANY term is in the graph at all
-        any_in_graph = False
+        # 2. If domains found, collect their entities
+        if relevant_domains:
+            relevant = set()
+            for domain in relevant_domains:
+                relevant.update(self._by_domain[domain])
+            # Always include the terms themselves
+            relevant.update(terms)
+            return relevant
+
+        # 3. No domain info — fall back to direct 1-hop neighbors
+        relevant = set(terms)
         for term in terms:
-            if self._by_subject.get(term) or self._by_obj.get(term):
-                any_in_graph = True
-                break
+            for rule in self._by_subject.get(term, [])[:50]:
+                relevant.add(rule.obj)
+            for rule in self._by_obj.get(term, [])[:50]:
+                relevant.add(rule.subject)
 
-        # If no terms are in the graph and no clusters, return None (full fallback)
-        if not any_in_graph:
-            has_cluster = any(self.taxonomy.get_cluster_members(t) for t in terms)
-            if not has_cluster:
-                return None
-
-        # 2. Add cluster members for each term
-        for term in terms:
-            members = self.taxonomy.get_cluster_members(term)
-            relevant.update(members)
-
-        # 3. Shallow BFS from each term (forward and backward, 2 hops)
-        #    This is much cheaper than full BFS because we limit hops, not node count
-        hop_limit = 2
-        max_neighbors_per_hop = 100  # Limit fan-out to keep set small
-
-        for term in terms:
-            # Forward BFS: term -> obj1 -> obj2
-            frontier = {term}
-            for _ in range(hop_limit):
-                next_frontier = set()
-                for entity in frontier:
-                    rules = self._by_subject.get(entity, [])
-                    # Take top-confidence rules if too many
-                    if len(rules) > max_neighbors_per_hop:
-                        rules = sorted(rules, key=lambda r: r.confidence, reverse=True)[:max_neighbors_per_hop]
-                    for rule in rules:
-                        if rule.confidence >= 0.2:
-                            next_frontier.add(rule.obj)
-                relevant.update(next_frontier)
-                frontier = next_frontier
-
-            # Backward BFS: subj2 -> subj1 -> term
-            frontier = {term}
-            for _ in range(hop_limit):
-                next_frontier = set()
-                for entity in frontier:
-                    rules = self._by_obj.get(entity, [])
-                    if len(rules) > max_neighbors_per_hop:
-                        rules = sorted(rules, key=lambda r: r.confidence, reverse=True)[:max_neighbors_per_hop]
-                    for rule in rules:
-                        if rule.confidence >= 0.2:
-                            next_frontier.add(rule.subject)
-                relevant.update(next_frontier)
-                frontier = next_frontier
-
-        return relevant
+        return relevant if len(relevant) > len(terms) else None
 
     # --- Forward chaining ---
 
@@ -680,18 +663,15 @@ class RuleEngineV4:
             max_fanout = 10
             max_direct = 50
 
-        # --- Cluster-aware routing ---
-        # Use taxonomy to narrow the search space BEFORE doing BFS
+        # --- Domain-aware routing ---
+        # Use domain index to narrow search space BEFORE BFS
         allowed_nodes = None
-        if state_size > 100000:
+        if state_size > 10000:
             relevant = self._get_relevant_entities(terms)
             if relevant is not None and len(relevant) > 0:
                 allowed_nodes = relevant
-                # With cluster routing, we can afford higher limits since search space is small
-                max_nodes = 5000
-                max_fanout = 100
-                max_direct = 500
-                effective_depth = min(self._max_depth, 5)
+                # Keep tight limits even with routing — don't inflate
+                # Domain routing reduces the GRAPH, not the search depth
 
         # 1. Dogrudan eslesme (limitli)
         # Note: direct results are NOT filtered by allowed_nodes since they
