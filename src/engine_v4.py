@@ -520,13 +520,32 @@ class RuleEngineV4:
             for rule in self._by_obj.get(term, [])[:100]:
                 relevant_domains.update(self._entity_domains.get(rule.subject, set()))
 
-        # 2. If domains found, collect their entities
+        # 2. If domains found, collect entities — but limit per domain
         if relevant_domains:
-            relevant = set()
+            relevant = set(terms)
             for domain in relevant_domains:
-                relevant.update(self._by_domain[domain])
-            # Always include the terms themselves
-            relevant.update(terms)
+                domain_entities = self._by_domain[domain]
+                # Only include entities that are REACHABLE from query terms
+                # within this domain (not all 50K entities)
+                for term in terms:
+                    if term in domain_entities:
+                        # Add term's direct neighbors in this domain
+                        for rule in self._by_subject.get(term, []):
+                            if rule.obj in domain_entities:
+                                relevant.add(rule.obj)
+                        for rule in self._by_obj.get(term, []):
+                            if rule.subject in domain_entities:
+                                relevant.add(rule.subject)
+                # 2nd hop: neighbors of neighbors (still filtered by domain)
+                for entity in list(relevant):
+                    if len(relevant) > 500:
+                        break  # Hard cap
+                    for rule in self._by_subject.get(entity, [])[:20]:
+                        if rule.obj in domain_entities:
+                            relevant.add(rule.obj)
+                    for rule in self._by_obj.get(entity, [])[:20]:
+                        if rule.subject in domain_entities:
+                            relevant.add(rule.subject)
             return relevant
 
         # 3. No domain info — fall back to direct 1-hop neighbors
