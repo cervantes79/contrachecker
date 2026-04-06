@@ -18,6 +18,7 @@ Yeni ozellikler:
 from collections import defaultdict, deque
 from src.taxonomy import Taxonomy
 from src.storage import RuleStore
+from src.decision_tree import DecisionTreeRouter
 
 
 class Rule:
@@ -60,6 +61,7 @@ class RuleEngineV4:
         self._entity_domains = defaultdict(set)  # entity -> set of domain names
         self._max_depth = 10
         self.taxonomy = Taxonomy(similarity_threshold=taxonomy_threshold)
+        self.decision_tree = DecisionTreeRouter()
 
         # Eger veritabaninda mevcut kurallar varsa, yukle
         existing = self.store.count()
@@ -422,6 +424,7 @@ class RuleEngineV4:
         self._by_relation.clear()
         self._by_domain.clear()
         self._entity_domains.clear()
+        self.decision_tree = DecisionTreeRouter()
 
         cursor = self.store.conn.execute(
             "SELECT id, subject, relation, obj, confidence, mass, source FROM rules WHERE confidence >= 0.1"
@@ -446,6 +449,11 @@ class RuleEngineV4:
                     self._by_domain[source].add(obj)
                     self._entity_domains[subject].add(source)
                     self._entity_domains[obj].add(source)
+                # Decision tree: turu iliskileri agac olusturur
+                if relation == "turu":
+                    self.decision_tree.add_turu_relation(subject, obj)
+                else:
+                    self.decision_tree.add_pattern(subject, relation, obj)
 
     def _rebuild_taxonomy(self):
         """Taxonomy'yi tum kurallardan yeniden kur."""
@@ -498,65 +506,68 @@ class RuleEngineV4:
                         parents.append((p, c * 0.9))
         return parents
 
-    # --- Domain-aware query routing ---
+    # --- Decision tree + domain routing ---
 
     def _get_relevant_entities(self, terms):
-        """Find entities relevant to query terms using DOMAIN routing.
+        """Find entities relevant to query terms.
 
-        Strategy:
-        1. Find which domains the query terms belong to
-        2. Collect ALL entities from those domains
-        3. This gives ~50K entities per domain instead of ~1.4M total
-        4. If no domain found, fall back to direct neighbors only
+        Priority:
+        1. Decision tree (turu hierarchy) — best isolation
+        2. Domain index — fallback for entities not in tree
+        3. Direct neighbors — last resort
         """
-        # 1. Find domains for each term AND their direct neighbors
+        terms_lower = [t.lower() for t in terms]
+
+        # 1. Try decision tree first
+        tree_entities = self.decision_tree.get_relevant_entities(terms_lower)
+        if tree_entities and len(tree_entities) > len(terms_lower):
+            # Tree found relevant branch — also add direct neighbors of terms
+            # for non-turu relationships (etki, ozellik, etc.)
+            relevant = set(tree_entities)
+            for term in terms_lower:
+                for rule in self._by_subject.get(term, [])[:50]:
+                    relevant.add(rule.obj)
+                for rule in self._by_obj.get(term, [])[:50]:
+                    relevant.add(rule.subject)
+            return relevant
+
+        # 2. Fallback: domain index
         relevant_domains = set()
-        for term in terms:
+        for term in terms_lower:
             domains = self._entity_domains.get(term, set())
             relevant_domains.update(domains)
-            # Also include domains of direct neighbors (1 hop)
-            for rule in self._by_subject.get(term, [])[:100]:
+            for rule in self._by_subject.get(term, [])[:30]:
                 relevant_domains.update(self._entity_domains.get(rule.obj, set()))
-            for rule in self._by_obj.get(term, [])[:100]:
-                relevant_domains.update(self._entity_domains.get(rule.subject, set()))
 
-        # 2. If domains found, collect entities — but limit per domain
         if relevant_domains:
-            relevant = set(terms)
+            relevant = set(terms_lower)
             for domain in relevant_domains:
                 domain_entities = self._by_domain[domain]
-                # Only include entities that are REACHABLE from query terms
-                # within this domain (not all 50K entities)
-                for term in terms:
+                for term in terms_lower:
                     if term in domain_entities:
-                        # Add term's direct neighbors in this domain
-                        for rule in self._by_subject.get(term, []):
+                        for rule in self._by_subject.get(term, [])[:50]:
                             if rule.obj in domain_entities:
                                 relevant.add(rule.obj)
-                        for rule in self._by_obj.get(term, []):
+                        for rule in self._by_obj.get(term, [])[:50]:
                             if rule.subject in domain_entities:
                                 relevant.add(rule.subject)
-                # 2nd hop: neighbors of neighbors (still filtered by domain)
                 for entity in list(relevant):
                     if len(relevant) > 500:
-                        break  # Hard cap
+                        break
                     for rule in self._by_subject.get(entity, [])[:20]:
                         if rule.obj in domain_entities:
                             relevant.add(rule.obj)
-                    for rule in self._by_obj.get(entity, [])[:20]:
-                        if rule.subject in domain_entities:
-                            relevant.add(rule.subject)
             return relevant
 
-        # 3. No domain info — fall back to direct 1-hop neighbors
-        relevant = set(terms)
-        for term in terms:
+        # 3. Last resort: direct neighbors
+        relevant = set(terms_lower)
+        for term in terms_lower:
             for rule in self._by_subject.get(term, [])[:50]:
                 relevant.add(rule.obj)
             for rule in self._by_obj.get(term, [])[:50]:
                 relevant.add(rule.subject)
 
-        return relevant if len(relevant) > len(terms) else None
+        return relevant if len(relevant) > len(terms_lower) else None
 
     # --- Forward chaining ---
 
