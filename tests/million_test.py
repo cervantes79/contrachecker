@@ -1929,23 +1929,21 @@ def run_million_test():
     print(f"  Uretim suresi: {t_gen_end - t_gen_start:.2f} saniye")
 
     # --- Motor olustur ve yukle ---
-    print(f"\n[2/6] Motor olusturuluyor ve kurallar yukleniyor...")
-    t_load_start = time.time()
-
     db_path = os.path.join(os.path.dirname(__file__), "million_test.db")
-    # Windows'ta dosya kilitli olabilir, temizle
-    for ext in ["", "-wal", "-shm"]:
-        p = db_path + ext
-        if os.path.exists(p):
-            try:
-                os.remove(p)
-            except PermissionError:
-                pass
 
-    engine = RuleEngineV4(db_path=db_path, taxonomy_threshold=0.3)
-
-    # Bulk load - taxonomy atla (cok yavas olur 1M icin)
-    loaded = engine.bulk_load(all_rules, skip_taxonomy=True)
+    # DB varsa ve doluysa, sifirdan uretme — SQLite'dan yukle
+    db_exists = os.path.exists(db_path) and os.path.getsize(db_path) > 1000000
+    if db_exists:
+        print(f"\n[2/6] Mevcut DB bulundu, SQLite'dan yukleniyor...")
+        t_load_start = time.time()
+        engine = RuleEngineV4(db_path=db_path, taxonomy_threshold=0.3)
+        loaded = engine.store.count()
+        # Decision tree ve indexler constructor'da _load_from_store ile yuklendi
+    else:
+        print(f"\n[2/6] Yeni DB olusturuluyor ve kurallar yukleniyor...")
+        t_load_start = time.time()
+        engine = RuleEngineV4(db_path=db_path, taxonomy_threshold=0.3)
+        loaded = engine.bulk_load(all_rules, skip_taxonomy=True)
 
     t_load_end = time.time()
     load_time = t_load_end - t_load_start

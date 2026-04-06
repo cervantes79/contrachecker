@@ -86,6 +86,11 @@ class RuleEngineV4:
                 self._by_domain[rule.source].add(rule.obj)
                 self._entity_domains[rule.subject].add(rule.source)
                 self._entity_domains[rule.obj].add(rule.source)
+            # Decision tree
+            if rule.relation == "turu":
+                self.decision_tree.add_turu_relation(rule.subject, rule.obj)
+            else:
+                self.decision_tree.add_pattern(rule.subject, rule.relation, rule.obj)
 
         # Taxonomy profillerini yukle
         profiles = self.store.load_all_profiles()
