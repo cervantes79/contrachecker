@@ -769,10 +769,11 @@ class RuleEngineV4:
                         "confidence": conf,
                     })
 
-        # 4. Kalitim
+        # 4. Kalitim (parent sayisi limitli, BFS chain string YAPMA — cok pahali)
+        max_inheritance = 50  # En fazla 50 parent tara
         for term in terms:
             parents = self._resolve_subject_with_substring(term)
-            for parent, parent_conf in parents:
+            for parent, parent_conf in parents[:max_inheritance]:
                 parent_rules = self._by_subject.get(parent, [])
                 if len(parent_rules) > max_direct:
                     parent_rules = sorted(parent_rules, key=lambda r: r.confidence, reverse=True)[:max_direct]
@@ -782,11 +783,8 @@ class RuleEngineV4:
                     if rule.confidence < 0.2:
                         continue
                     inherited_conf = parent_conf * rule.confidence
+                    # Basit chain string — BFS ile yol aramak yerine direkt yaz
                     chain_str = f"{term} -> {parent} -> {rule.obj}"
-                    if parent != term:
-                        type_chain = self._build_type_chain(term, parent)
-                        if type_chain:
-                            chain_str = " -> ".join(type_chain + [rule.obj])
 
                     if chain_str not in seen_chains:
                         seen_chains.add(chain_str)
