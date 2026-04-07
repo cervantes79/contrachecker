@@ -40,8 +40,8 @@ dev = [
 
 [project.urls]
 Homepage = "https://gencbaris.com"
-Repository = "https://github.com/barisgenc/contrachecker"
-Issues = "https://github.com/barisgenc/contrachecker/issues"
+Repository = "https://github.com/cervantes79/contrachecker"
+Issues = "https://github.com/cervantes79/contrachecker/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/contrachecker"]

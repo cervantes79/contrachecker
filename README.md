@@ -194,7 +194,7 @@ Main entry point. Extracts claims from chunks and detects contradictions.
 
 ## Origin
 
-contrachecker evolved from [ChainOfMeaning](https://github.com/barisgenc/contrachecker), a symbolic reasoning engine I built exploring how to represent and reason about knowledge outside of neural networks. After iterating through 4 engine versions -- from basic LSTM-inspired gates to a 1M-rule SQLite-backed inference system -- the most valuable discovery wasn't the engine itself, but the **contradiction detection algorithms**: direct conflict detection, transitive chain analysis, and bridge contradiction discovery.
+contrachecker evolved from ChainOfMeaning, a symbolic reasoning engine I built exploring how to represent and reason about knowledge outside of neural networks. After iterating through 4 engine versions -- from basic LSTM-inspired gates to a 1M-rule SQLite-backed inference system -- the most valuable discovery wasn't the engine itself, but the **contradiction detection algorithms**: direct conflict detection, transitive chain analysis, and bridge contradiction discovery.
 
 This library extracts that core value and puts it where it's most useful: between your RAG retriever and your LLM, catching the conflicts that language models can't see.
 
