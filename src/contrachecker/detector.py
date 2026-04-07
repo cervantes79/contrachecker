@@ -10,6 +10,29 @@ from collections import defaultdict, deque
 
 from .models import Claim, Contradiction
 
+# Relation pairs that are semantically opposite.
+# If two claims share (subject, object) but have opposing relations, that's a contradiction.
+_OPPOSITE_RELATIONS: dict[str, set[str]] = {}
+_OPPOSITES_RAW: list[tuple[str, str]] = [
+    ("causes", "prevents"),
+    ("increases", "decreases"),
+    ("increases", "reduces"),
+    ("supports", "undermines"),
+    ("safe", "unsafe"),
+    ("safe", "dangerous"),
+    ("safe_for", "dangerous_for"),
+    ("safe_with", "contraindicated_with"),
+    ("recommended_as", "contraindicated_as"),
+    ("promotes", "inhibits"),
+    ("enables", "blocks"),
+    ("is", "is_not"),
+    ("confirms", "denies"),
+    ("improves", "worsens"),
+]
+for _a, _b in _OPPOSITES_RAW:
+    _OPPOSITE_RELATIONS.setdefault(_a, set()).add(_b)
+    _OPPOSITE_RELATIONS.setdefault(_b, set()).add(_a)
+
 
 class ContradictionDetector:
     """Stateless contradiction detector for a set of claims.
@@ -71,6 +94,38 @@ class ContradictionDetector:
                                     ),
                                 )
                             )
+
+        # 1b. Semantic opposition: same subject+object, opposite relations
+        for claim in claims:
+            opposites = _OPPOSITE_RELATIONS.get(claim.relation, set())
+            if not opposites:
+                continue
+            for other in by_subject.get(claim.subject, []):
+                if other is claim:
+                    continue
+                if other.relation not in opposites:
+                    continue
+                if other.object != claim.object:
+                    continue
+                pair_key = tuple(sorted([
+                    f"{claim.subject}:{claim.relation}:{claim.object}",
+                    f"{other.subject}:{other.relation}:{other.object}",
+                ]))
+                if pair_key not in seen:
+                    seen.add(pair_key)
+                    results.append(
+                        Contradiction(
+                            type="direct",
+                            claim_a=claim,
+                            claim_b=other,
+                            confidence=min(claim.confidence, other.confidence),
+                            explanation=(
+                                f"'{claim.subject}' has opposing claims: "
+                                f"'{claim.relation} {claim.object}' vs "
+                                f"'{other.relation} {other.object}'"
+                            ),
+                        )
+                    )
 
         # 2. Indirect contradictions
         self._detect_indirect(claims, by_subject, by_object, by_topic, results)

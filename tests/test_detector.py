@@ -45,6 +45,37 @@ class TestDirectContradictions:
         result = detector.detect(claims)
         assert len(result) == 2
 
+    def test_semantic_opposition_causes_prevents(self):
+        """'causes X' vs 'prevents X' on same subject = contradiction."""
+        detector = ContradictionDetector()
+        claims = [
+            Claim(subject="aspirin", relation="prevents", object="heart attacks", source_chunk_id="c1"),
+            Claim(subject="aspirin", relation="causes", object="heart attacks", source_chunk_id="c2"),
+        ]
+        result = detector.detect(claims)
+        assert len(result) == 1
+        assert result[0].type == "direct"
+
+    def test_semantic_opposition_increases_decreases(self):
+        """'increases X' vs 'decreases X' on same subject = contradiction."""
+        detector = ContradictionDetector()
+        claims = [
+            Claim(subject="exercise", relation="increases", object="cardiovascular risk", source_chunk_id="c1"),
+            Claim(subject="exercise", relation="decreases", object="cardiovascular risk", source_chunk_id="c2"),
+        ]
+        result = detector.detect(claims)
+        assert len(result) == 1
+
+    def test_no_opposition_different_objects(self):
+        """Opposite relations but different objects = NOT a contradiction."""
+        detector = ContradictionDetector()
+        claims = [
+            Claim(subject="drug", relation="causes", object="nausea", source_chunk_id="c1"),
+            Claim(subject="drug", relation="prevents", object="headache", source_chunk_id="c2"),
+        ]
+        result = detector.detect(claims)
+        assert len(result) == 0
+
     def test_three_way_contradiction(self):
         """3 claims about same topic but with 3 different objects = 3 pairs."""
         detector = ContradictionDetector()

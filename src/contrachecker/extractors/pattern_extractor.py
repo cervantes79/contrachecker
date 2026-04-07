@@ -62,20 +62,21 @@ _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
             re.IGNORECASE,
         ),
     ),
-    # "X is a Y"  →  is_a  (must come AFTER more-specific "is" patterns)
+    # "X is a/an/the Y"  →  is_a  (must come AFTER more-specific "is" patterns)
     (
         "is_a",
         re.compile(
-            r"(?P<subj>" + _NP + r")\s+is\s+(?:an?\s+)(?P<obj>" + _NP + r")",
+            r"(?P<subj>" + _NP + r")\s+is\s+(?:an?\s+|the\s+)(?P<obj>" + _NP + r")",
             re.IGNORECASE,
         ),
     ),
     # "X is ADJ"  →  is_property  (bare predicate adjective, e.g. "Coffee is healthy")
     # Must come AFTER all other "is" patterns to avoid shadowing them.
+    # Excludes articles (a, an, the) which are handled by is_a.
     (
         "is_property",
         re.compile(
-            r"(?P<subj>" + _NP + r")\s+is\s+(?P<obj>[a-z][a-z\-]+)(?:[.!?,;:\s]|$)",
+            r"(?P<subj>" + _NP + r")\s+is\s+(?P<obj>(?!(?:a|an|the)\b)[a-z][a-z\-]+)(?:[.!?,;:\s]|$)",
             re.IGNORECASE,
         ),
     ),
