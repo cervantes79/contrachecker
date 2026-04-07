@@ -70,6 +70,15 @@ _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
             re.IGNORECASE,
         ),
     ),
+    # "X is ADJ"  →  is_property  (bare predicate adjective, e.g. "Coffee is healthy")
+    # Must come AFTER all other "is" patterns to avoid shadowing them.
+    (
+        "is_property",
+        re.compile(
+            r"(?P<subj>" + _NP + r")\s+is\s+(?P<obj>[a-z][a-z\-]+)(?:[.!?,;:\s]|$)",
+            re.IGNORECASE,
+        ),
+    ),
     # "X causes Y"
     (
         "causes",
