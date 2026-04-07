@@ -86,13 +86,7 @@ def generate_all_rules():
 
 
 def create_db(rules):
-    """DB olustur ve kurallari yaz."""
-    # Eski DB varsa sil
-    for ext in ["", "-wal", "-shm"]:
-        p = DB_PATH + ext
-        if os.path.exists(p):
-            os.remove(p)
-
+    """DB'ye kural ekle. Mevcut DB varsa ustune ekler, SILMEZ."""
     store = RuleStore(DB_PATH)
 
     # Batch insert
@@ -110,8 +104,56 @@ def create_db(rules):
     return count
 
 
+def scale_rules(base_rules, multiplier):
+    """Mevcut kurallari varyasyonlarla cogalt.
+    Her kural icin nitelikli versiyonlar uretir.
+    Ornek: (yapay zeka, etki, verimli) -> (yapay zeka sistemi, etki, verimli), vb.
+    """
+    if multiplier <= 1:
+        return base_rules
+
+    import random
+    random.seed(42)
+
+    scaled = list(base_rules)
+    prefixes = ["ileri", "temel", "modern", "geleneksel", "yeni", "eski",
+                 "dijital", "analog", "yerel", "global"]
+    suffixes = ["sistemi", "alani", "sureci", "yontemi", "uygulamasi",
+                "modeli", "analizi", "stratejisi", "politikasi", "cercevesi"]
+
+    existing = set((s, r, o) for s, r, o, *_ in base_rules)
+
+    for mult in range(1, multiplier):
+        for s, r, o, c, m, src in base_rules:
+            # Varyasyon 1: prefix + subject
+            prefix = prefixes[mult % len(prefixes)]
+            new_s = f"{prefix} {s}"
+            triple = (new_s, r, o)
+            if triple not in existing:
+                existing.add(triple)
+                scaled.append((new_s, r, o, c, m, src))
+
+            # Varyasyon 2: subject + suffix
+            suffix = suffixes[mult % len(suffixes)]
+            new_s2 = f"{s} {suffix}"
+            triple2 = (new_s2, r, o)
+            if triple2 not in existing:
+                existing.add(triple2)
+                scaled.append((new_s2, r, o, c, m, src))
+
+            if len(scaled) >= len(base_rules) * multiplier:
+                return scaled
+
+    return scaled
+
+
 def main():
     force = "--force" in sys.argv
+    # Scale: python tools/generate_knowledge.py --scale 10
+    scale = 1
+    for i, arg in enumerate(sys.argv):
+        if arg == "--scale" and i + 1 < len(sys.argv):
+            scale = int(sys.argv[i + 1])
 
     if not force and check_existing():
         store = RuleStore(DB_PATH)
@@ -122,12 +164,22 @@ def main():
         return
 
     print(f"Bilgi tabani olusturuluyor: {DB_PATH}")
+    if scale > 1:
+        print(f"  Scale: {scale}x (hedef ~{scale}M kural)")
     print()
 
     print("[1/2] Kurallar uretiliyor...")
     t = time.time()
     rules = generate_all_rules()
-    print(f"\n  Toplam: {len(rules):,} kural ({time.time()-t:.1f}s)")
+    print(f"\n  Base: {len(rules):,} kural ({time.time()-t:.1f}s)")
+
+    if scale > 1:
+        print(f"\n  {scale}x scale uygulaniytor...")
+        t2 = time.time()
+        rules = scale_rules(rules, scale)
+        print(f"  Scale sonrasi: {len(rules):,} kural ({time.time()-t2:.1f}s)")
+
+    print(f"  Toplam: {len(rules):,} kural")
 
     print("\n[2/2] SQLite'a yaziliyor...")
     t = time.time()

@@ -410,8 +410,8 @@ class RuleEngineV4:
 
             loaded += len(batch)
 
-        # Simdi SQLite'dan RAM'e yukle (indeksleri kur)
-        self._rebuild_indexes()
+        # Yeni eklenen kurallari RAM indekslerine EKLE (mevcut olanları silmeden)
+        self._append_new_rules_to_indexes(loaded)
 
         # Taxonomy guncelle (buyuk veri setlerinde opsiyonel)
         if not skip_taxonomy:
@@ -419,9 +419,43 @@ class RuleEngineV4:
 
         return loaded
 
+    def _append_new_rules_to_indexes(self, count):
+        """Son eklenen 'count' kurali SQLite'dan okuyup RAM indexlerine EKLE.
+        Mevcut indexleri SILMEZ."""
+        # Son eklenen kurallari al (en yuksek id'ler)
+        max_id = self.store.conn.execute("SELECT MAX(id) FROM rules").fetchone()[0]
+        if max_id is None:
+            return
+        start_id = max(1, max_id - count + 1)
+        cursor = self.store.conn.execute(
+            "SELECT id, subject, relation, obj, confidence, mass, source FROM rules WHERE id >= ? AND confidence >= 0.1",
+            (start_id,)
+        )
+        added = 0
+        for row in cursor:
+            rule_id, subject, relation, obj, confidence, mass, source = row
+            rule = Rule(subject, relation, obj, confidence, source, mass, rule_id)
+            self.state.append(rule)
+            self._by_subject[rule.subject].append(rule)
+            self._by_obj[rule.obj].append(rule)
+            key = (rule.subject, rule.relation)
+            self._by_subject_relation[key].append(rule)
+            self._by_relation[rule.relation].append(rule)
+            if source and source != "direct" and source != "bulk":
+                self._by_domain[source].add(subject)
+                self._by_domain[source].add(obj)
+                self._entity_domains[subject].add(source)
+                self._entity_domains[obj].add(source)
+            if relation == "turu":
+                self.decision_tree.add_turu_relation(subject, obj)
+            else:
+                self.decision_tree.add_pattern(subject, relation, obj)
+            added += 1
+
     def _rebuild_indexes(self):
         """RAM indekslerini SQLite'dan tamamen yeniden kur.
-        Buyuk veri setleri icin cursor iterator kullanir (peak RAM azaltir)."""
+        DIKKAT: Sadece bos engine icin kullanilir (ilk yukleme).
+        Mevcut indexler varsa _append_new_rules_to_indexes kullan."""
         self.state.clear()
         self._by_subject.clear()
         self._by_obj.clear()

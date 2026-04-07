@@ -1929,7 +1929,7 @@ def run_million_test():
     print(f"  Uretim suresi: {t_gen_end - t_gen_start:.2f} saniye")
 
     # --- Motor olustur ve yukle ---
-    db_path = os.path.join(os.path.dirname(__file__), "million_test.db")
+    db_path = os.path.join(os.path.dirname(__file__), "million_test_v2.db")
 
     # DB varsa ve doluysa, sifirdan uretme — SQLite'dan yukle
     db_exists = os.path.exists(db_path) and os.path.getsize(db_path) > 1000000
@@ -2072,13 +2072,7 @@ def run_million_test():
 
     # --- Temizlik ---
     print(f"\n[6/6] Temizlik...")
-    if os.path.exists(db_path):
-        os.remove(db_path)
-    # WAL dosyalarini da temizle
-    for ext in ["-wal", "-shm"]:
-        wal_path = db_path + ext
-        if os.path.exists(wal_path):
-            os.remove(wal_path)
+    # DB SILINMEZ. Kalici veri.
 
     mem_final = tracemalloc.get_traced_memory()
     tracemalloc.stop()
