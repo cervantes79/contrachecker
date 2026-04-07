@@ -1,0 +1,12 @@
+# SQLite databases (too large for git, generate with tools/generate_knowledge.py)
+rules/*.db
+rules/*.db-wal
+rules/*.db-shm
+tests/*.db
+tests/*.db-wal
+tests/*.db-shm
+
+# Python
+__pycache__/
+*.pyc
+.claude/
