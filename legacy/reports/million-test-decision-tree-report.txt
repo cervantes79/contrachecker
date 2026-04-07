@@ -1,0 +1,147 @@
+======================================================================
+  ChainOfMeaning v4 - 1 MILYON KURAL OLCEK TESTI
+======================================================================
+
+[1/6] Kurallar uretiliyor...
+  Yapay Zeka & Teknoloji [yapay_zeka_teknoloji]: 50,000 kural
+  Saglik & Tip [saglik_tip]: 50,000 kural
+  Iklim & Cevre [iklim_cevre]: 50,000 kural
+  Ekonomi & Finans [ekonomi_finans]: 50,000 kural
+  Egitim & Gelisim [egitim_gelisim]: 50,000 kural
+  Toplum & Siyaset [toplum_siyaset]: 50,000 kural
+  Bilim [bilim]: 50,000 kural
+  Kultur & Sanat [kultur_sanat]: 50,000 kural
+  Spor [spor]: 50,000 kural
+  Gunluk Yasam [gunluk_yasam]: 50,000 kural
+  Ulasim [ulasim]: 50,000 kural
+  Enerji [enerji]: 50,000 kural
+  Hukuk [hukuk]: 50,000 kural
+  Medya [medya]: 50,000 kural
+  Gida [gida]: 50,000 kural
+  Guvenlik [guvenlik]: 50,000 kural
+  Uzay [uzay]: 50,000 kural
+  Denizcilik [denizcilik]: 50,000 kural
+  Tarim [tarim]: 50,000 kural
+  Mimari [mimari]: 50,000 kural
+  Cross-domain: 29 kural
+
+  Toplam uretilen: 1,000,029 kural
+  Uretim suresi: 23.39 saniye
+
+[2/6] Yeni DB olusturuluyor ve kurallar yukleniyor...
+  Yuklenen kural: 1,000,029
+  RAM'deki kural: 1,000,029
+  Benzersiz subject: 1,406
+  Benzersiz relation: 51
+  Benzersiz object: 57,920
+  Yukleme suresi: 61.66 saniye
+  SQLite dosya boyutu: 190.0 MB
+  RAM kullanimi (izlenen): 831.5 MB
+  RAM tepe kullanimi: 833.6 MB
+
+[3/6] 50 soru test ediliyor...
+  [+]  1. [chain       ] GECTI           | Yapay zeka issizlik yaratir mi?                    (500 sonuc, 50771.1ms)
+  [+]  2. [nuance      ] GECTI           | Bitcoin guvenli midir?                             (500 sonuc, 44734.1ms)
+  [+]  3. [nuance      ] GECTI           | Uzaktan calisma verimli midir?                     (500 sonuc, 20781.9ms)
+  [+]  4. [direct      ] GECTI           | mRNA asilari etkili mi?                            (500 sonuc, 28171.2ms)
+  [+]  5. [nuance      ] GECTI           | Sosyal medya demokrasiye etkisi nedir?             (500 sonuc, 65657.5ms)
+  [+]  6. [chain       ] GECTI           | Fosil yakit iklimi nasil etkiler?                  (500 sonuc, 36527.6ms)
+  [+]  7. [direct      ] GECTI           | CRISPR tedavide kullanilabilir mi?                 (500 sonuc, 24420.2ms)
+  [+]  8. [chain       ] GECTI           | Stres sagligi nasil etkiler?                       (500 sonuc, 19074.5ms)
+  [+]  9. [chain       ] GECTI           | Gunes enerjisi karbon saliimini azaltir mi?        (500 sonuc, 12336.1ms)
+  [+] 10. [direct      ] GECTI           | Depresyon yasam kalitesini etkiler mi?             (500 sonuc, 17913.9ms)
+  [+] 11. [negative    ] GECTI           | Zurafalar satranc oynar mi?                        (sonuc yok)
+  [-] 12. [negative    ] YANLIS POZITIF  | Kamelya cicegi matematik ogretiir mi?              (108 sonuc, 109.4ms)
+  [+] 13. [negative    ] GECTI           | Penguen moda tasarimcisi mi?                       (sonuc yok)
+  [+] 14. [negative    ] GECTI           | Buzdolabi felsefi dusunur mu?                      (sonuc yok)
+  [+] 15. [negative    ] GECTI           | Sandalye muzik besteler mi?                        (sonuc yok)
+  [+] 16. [negative    ] GECTI           | Bulut aritmetik yapar mi?                          (sonuc yok)
+  [+] 17. [negative    ] GECTI           | Kalem askeri strateji gelistirir mi?               (sonuc yok)
+  [+] 18. [negative    ] GECTI           | Perde savas sanati bilir mi?                       (sonuc yok)
+  [+] 19. [negative    ] GECTI           | Hamak hukuk reformu yapar mi?                      (sonuc yok)
+  [-] 20. [negative    ] YANLIS POZITIF  | Terlik astrofizik arastirir mi?                    (107 sonuc, 121.4ms)
+  [+] 21. [deep_chain  ] GECTI           | Fosil yakit deniz seviyesini yukseltir mi?         (500 sonuc, 11911.5ms)
+  [+] 22. [deep_chain  ] GECTI           | Stres hastaligi tetikler mi?                       (500 sonuc, 14548.1ms)
+  [+] 23. [deep_chain  ] GECTI           | GPU yapay zeka basarisini belirler mi?             (500 sonuc, 48654.7ms)
+  [+] 24. [deep_chain  ] GECTI           | Orman katliami su baskini yapar mi?                (500 sonuc, 31947.9ms)
+  [+] 25. [deep_chain  ] GECTI           | Obezite olum riskini arttirir mi?                  (500 sonuc, 17071.8ms)
+  [+] 26. [deep_chain  ] GECTI           | Egzersiz ruh sagligini iyilestirir mi?             (500 sonuc, 40058.5ms)
+  [+] 27. [deep_chain  ] GECTI           | Enflasyon sosyal huzursuzluga neden olur mu?       (500 sonuc, 16440.8ms)
+  [+] 28. [deep_chain  ] GECTI           | Bulut bilisim girisimciligi destekler mi?          (500 sonuc, 19784.2ms)
+  [+] 29. [deep_chain  ] GECTI           | Dijital ucurum egitim esitsizligine neden olur mu? (500 sonuc, 20128.2ms)
+  [+] 30. [deep_chain  ] GECTI           | Antibiyotik direnci olumu arttirir mi?             (500 sonuc, 22664.9ms)
+  [+] 31. [inheritance ] GECTI           | LLM veri gerektirir mi?                            (500 sonuc, 16132.9ms)
+  [+] 32. [inheritance ] GECTI           | Ethereum merkezsiz midir?                          (500 sonuc, 15843.7ms)
+  [+] 33. [inheritance ] GECTI           | Gunes paneli temiz enerji uretir mi?               (500 sonuc, 13100.3ms)
+  [+] 34. [inheritance ] GECTI           | Ransomware bir siber tehdit midir?                 (500 sonuc, 48669.5ms)
+  [+] 35. [inheritance ] GECTI           | Yoga saglikli midir?                               (500 sonuc, 20950.5ms)
+  [+] 36. [inheritance ] GECTI           | Netflix dijital medya midir?                       (500 sonuc, 52853.1ms)
+  [+] 37. [inheritance ] GECTI           | Depresyon bir hastalik midir?                      (500 sonuc, 16827.6ms)
+  [+] 38. [inheritance ] GECTI           | Konteyner gemisi ticaret yapar mi?                 (500 sonuc, 20038.3ms)
+  [+] 39. [inheritance ] GECTI           | Bugday bir bitki midir?                            (500 sonuc, 20493.4ms)
+  [+] 40. [inheritance ] GECTI           | Kodlama egitimi beceri kazandirir mi?              (500 sonuc, 18725.3ms)
+  [+] 41. [nuance      ] GECTI           | Elektrikli araclar tamamen cevreci midir?          (500 sonuc, 15816.3ms)
+  [+] 42. [nuance      ] GECTI           | Kripto para gelecek midir?                         (500 sonuc, 14729.0ms)
+  [+] 43. [nuance      ] GECTI           | Yapay zeka sanati gercek sanat midir?              (500 sonuc, 26832.7ms)
+  [+] 44. [nuance      ] GECTI           | Nukleer enerji guvenli midir?                      (500 sonuc, 32324.2ms)
+  [+] 45. [nuance      ] GECTI           | Kemoterapi faydali mi?                             (500 sonuc, 20173.7ms)
+  [+] 46. [nuance      ] GECTI           | Online egitim kaliteli mi?                         (500 sonuc, 18645.0ms)
+  [+] 47. [nuance      ] GECTI           | Goc topluma faydali mi?                            (500 sonuc, 22489.1ms)
+  [+] 48. [nuance      ] GECTI           | Sosyal medya ruh sagligi icin zararli mi?          (500 sonuc, 49378.7ms)
+  [+] 49. [nuance      ] GECTI           | GDO gida guvenli midir?                            (500 sonuc, 32299.0ms)
+  [+] 50. [nuance      ] GECTI           | Doping sporculara yardimci mi?                     (500 sonuc, 17599.7ms)
+
+[4/6] Sonuclar hesaplaniyor...
+
+[5/6] Persistence testi...
+  Kayit-yukle: 1,000,029 -> 1,000,029 kural TAMAM
+  Yuklemeden sonra sorgu: CALISIYOR
+  Yeniden yukleme suresi: 17.56 saniye
+
+[6/6] Temizlik...
+
+======================================================================
+  1M KURAL OLCEK TESTI - FINAL RAPOR
+======================================================================
+
+  OLCEK
+  Toplam kural:                     1,000,029
+  Benzersiz subject:                    1,406
+  Benzersiz relation:                      51
+  Benzersiz object:                    57,920
+  Alan sayisi:                             20
+
+  PERFORMANS
+  Kural uretim suresi:                23.39 s
+  Bulk yukleme suresi:                61.66 s
+  Yeniden yukleme suresi:             17.56 s
+  SQLite dosya boyutu:                190.0 MB
+  RAM kullanimi (izlenen):            831.5 MB
+  RAM tepe kullanimi:                 833.6 MB
+
+  SORGU PERFORMANSI
+  Ortalama sorgu suresi:            21155.3 ms
+  En hizli sorgu:                       0.0 ms
+  En yavas sorgu:                   65657.5 ms
+
+  DOGRULUK
+  Pozitif testler:               40/40 (100%)
+  Negatif testler:               8/10 (80%)
+  Yanlis pozitif:                2/10
+  GENEL DOGRULUK:                48/50 (96%)
+
+  KALICILIK
+  Kayit-yukle testi:             GECTI
+  Yuklemeden sonra sorgu:        GECTI
+
+  DEGERLENDIRME
+  Performans notu:               YAVAS - IYILESTIRME GEREKLI
+  Dogruluk notu:                 MUKEMMEL
+
+  BASARISIZ SORULAR (2):
+    12. [negative    ] YANLIS POZITIF  | Kamelya cicegi matematik ogretiir mi?
+        En iyi sonuc: matematik ogretimi -> matematik -> bilgi
+    20. [negative    ] YANLIS POZITIF  | Terlik astrofizik arastirir mi?
+        En iyi sonuc: astrofizik arastirmasi -> astrofizik -> teori
+
+======================================================================
